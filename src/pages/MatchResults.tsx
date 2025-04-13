@@ -1,14 +1,28 @@
-
 import PageLayout from "@/components/layout/PageLayout";
 import MatchList from "@/components/matches/MatchList";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MatchResults = () => {
   const navigate = useNavigate();
-  // In a real implementation, this would come from Supabase auth
-  const isAuthenticated = false;
+  const { isAuthenticated, isLoading } = useAuth();
+  const [selectedActivity, setSelectedActivity] = useState("all");
+
+  // Mock data for activities - in a real implementation, this would be fetched from Supabase
+  const userActivities = [
+    { id: "1", name: "Tech Networking Coffee" },
+    { id: "2", name: "Hiking Club Meetup" },
+    { id: "3", name: "Startup Weekend" },
+  ];
 
   useEffect(() => {
     // Temporary redirect until authentication is set up
@@ -28,7 +42,27 @@ const MatchResults = () => {
           Here are your current matches. Remember to provide feedback to help us improve your future connections.
         </p>
         
-        <MatchList />
+        <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
+          <h2 className="text-xl font-medium">Recommended Connections</h2>
+          <Select 
+            value={selectedActivity} 
+            onValueChange={setSelectedActivity}
+          >
+            <SelectTrigger className="w-full sm:w-[250px]">
+              <SelectValue placeholder="Select an activity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Activities</SelectItem>
+              {userActivities.map(activity => (
+                <SelectItem key={activity.id} value={activity.id}>
+                  {activity.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} />
       </div>
     </PageLayout>
   );

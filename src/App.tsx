@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,7 +13,10 @@ import NotFound from "./pages/NotFound";
 import ProfileDashboard from "./pages/ProfileDashboard";
 import ActivityManagement from "./pages/ActivityManagement";
 import MatchResults from "./pages/MatchResults";
+import MatchHistoryPage from "./pages/MatchHistoryPage";
 import CreateActivity from "./pages/CreateActivity";
+import MyActivitiesPage from "./pages/MyActivitiesPage";
+import ActivityDetailsPage from "./pages/ActivityDetailsPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/activities" element={<ActivitiesPage />} />
+            <Route path="/activities/:activityId" element={<ActivityDetailsPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route 
               path="/login" 
@@ -54,6 +57,22 @@ const App = () => (
               } 
             />
             <Route 
+              path="/my-activities" 
+              element={
+                <RequireAuth>
+                  <MyActivitiesPage />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/my-activities/:activityId"
+              element={
+                <RequireAuth>
+                  <MyActivitiesPage />
+                </RequireAuth>
+              }
+            />
+            <Route 
               path="/activity-management" 
               element={
                 <RequireAuth>
@@ -66,6 +85,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <MatchResults />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/match-history" 
+              element={
+                <RequireAuth>
+                  <MatchHistoryPage />
                 </RequireAuth>
               } 
             />

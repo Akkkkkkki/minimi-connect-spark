@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,13 +16,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 
-const MatchList = () => {
+interface MatchListProps {
+  activityId?: string;
+}
+
+const MatchList = ({ activityId }: MatchListProps) => {
   // Mock data - would come from Supabase in real implementation
-  const matches = [
+  const allMatches = [
     {
       id: "1",
       name: "Alex Johnson",
       activityName: "Tech Networking Coffee",
+      activityId: "1",
       matchDate: "2025-04-15",
       matchScore: 85,
       matchReason: "You both share interests in AI and startups, plus you're both early risers who enjoy a morning coffee chat!",
@@ -34,13 +38,30 @@ const MatchList = () => {
       id: "2",
       name: "Riley Chen",
       activityName: "Hiking Club Meetup",
+      activityId: "2",
       matchDate: "2025-04-15",
       matchScore: 78,
       matchReason: "Both of you love outdoor activities and photography. Riley has also visited 3 of the same national parks as you!",
       icebreaker: "What's your favorite hiking spot near the city?",
       photoUrl: "https://i.pravatar.cc/150?img=35",
+    },
+    {
+      id: "3",
+      name: "Jordan Smith",
+      activityName: "Startup Weekend",
+      activityId: "3",
+      matchDate: "2025-04-10",
+      matchScore: 92,
+      matchReason: "You both have startup experience and complementary skills - your marketing background pairs well with Jordan's technical expertise.",
+      icebreaker: "What inspired you to join Startup Weekend?",
+      photoUrl: "https://i.pravatar.cc/150?img=12",
     }
   ];
+
+  // Filter matches by activity if specified
+  const matches = activityId 
+    ? allMatches.filter(match => match.activityId === activityId)
+    : allMatches;
 
   const [feedbackType, setFeedbackType] = useState<"positive" | "negative" | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
@@ -66,11 +87,21 @@ const MatchList = () => {
     return (
       <Card>
         <CardContent className="pt-6 text-center py-12">
-          <p className="text-muted-foreground">You don't have any matches yet.</p>
-          <p className="mt-2">Join some activities to start matching with others!</p>
-          <Button className="mt-4" asChild>
-            <a href="/activities">Browse Activities</a>
-          </Button>
+          <p className="text-muted-foreground">
+            {activityId
+              ? "No matches found for this activity."
+              : "You don't have any matches yet."}
+          </p>
+          <p className="mt-2">
+            {activityId
+              ? "Try selecting a different activity or check back later."
+              : "Join some activities to start matching with others!"}
+          </p>
+          {!activityId && (
+            <Button className="mt-4" asChild>
+              <a href="/activities">Browse Activities</a>
+            </Button>
+          )}
         </CardContent>
       </Card>
     );

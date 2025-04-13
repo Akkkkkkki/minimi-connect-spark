@@ -1,10 +1,16 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-const JoinedActivities = () => {
+interface JoinedActivitiesProps {
+  onSelectActivity?: (activityId: string) => void;
+}
+
+const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
+  const navigate = useNavigate();
+  
   // Mock data - would come from Supabase in real implementation
   const activities = [
     {
@@ -53,6 +59,14 @@ const JoinedActivities = () => {
     );
   }
 
+  const handleViewDetails = (activityId: string) => {
+    if (onSelectActivity) {
+      onSelectActivity(activityId);
+    } else {
+      navigate(`/my-activities/${activityId}`);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {activities.map(activity => (
@@ -92,7 +106,7 @@ const JoinedActivities = () => {
                   <Button variant="outline">Edit Answers</Button>
                 )}
                 {activity.status === "completed" && (
-                  <Button variant="outline">View Details</Button>
+                  <Button variant="outline" onClick={() => handleViewDetails(activity.id)}>View Details</Button>
                 )}
               </div>
             </div>

@@ -1,7 +1,7 @@
-
 import { Calendar, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 export interface ActivityCardProps {
   id: string;
@@ -29,6 +29,12 @@ const ActivityCard = ({
   tags,
   imageUrl,
 }: ActivityCardProps) => {
+  const navigate = useNavigate();
+
+  const handleJoinActivity = () => {
+    navigate(`/activities/${id}`);
+  };
+
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100">
       <div className="h-48 bg-gray-200 relative">
@@ -74,7 +80,7 @@ const ActivityCard = ({
           </div>
         </div>
         
-        <Button className="w-full bg-accent hover:bg-accent/90">
+        <Button className="w-full bg-accent hover:bg-accent/90" onClick={handleJoinActivity}>
           Join Activity
         </Button>
       </div>

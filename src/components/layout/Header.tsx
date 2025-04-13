@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -31,8 +30,10 @@ const Header = () => {
 
   const authenticatedNavItems = [
     { label: "Profile", path: "/profile" },
-    { label: "Matches", path: "/matches" },
-    { label: "My Activities", path: "/activity-management" }
+    { label: "My Activities", path: "/my-activities" },
+    { label: "Connections", path: "/matches" },
+    { label: "Match History", path: "/match-history" },
+    { label: "Organizer Portal", path: "/activity-management" }
   ];
 
   const toggleMenu = () => {
@@ -117,11 +118,17 @@ const Header = () => {
                       <DropdownMenuItem onClick={() => navigate("/profile")}>
                         Profile
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/activity-management")}>
+                      <DropdownMenuItem onClick={() => navigate("/my-activities")}>
                         My Activities
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/matches")}>
-                        Matches
+                        Connections
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/match-history")}>
+                        Match History
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/activity-management")}>
+                        Organizer Portal
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>
