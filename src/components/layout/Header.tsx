@@ -2,18 +2,26 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Heart, Menu, X } from "lucide-react";
+import { Heart, Menu, X, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/context/AuthContext";
+import { signOut } from "@/lib/supabase";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Mock authentication state - this would come from Supabase in real implementation
-  const isAuthenticated = false;
+  const { isAuthenticated, user } = useAuth();
 
   const navItems = [
     { label: "Home", path: "/" },
@@ -33,6 +41,12 @@ const Header = () => {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+    closeMenu();
   };
 
   const isActive = (path: string) => {
@@ -90,15 +104,31 @@ const Header = () => {
               
               <div className="hidden md:flex items-center space-x-3">
                 {isAuthenticated ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      // Sign out logic would go here
-                      navigate("/");
-                    }}
-                  >
-                    Sign Out
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <UserCircle size={18} />
+                        <span>{user?.user_metadata?.name || 'Account'}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/profile")}>
+                        Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/activity-management")}>
+                        My Activities
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/matches")}>
+                        Matches
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
                   <>
                     <Button 
@@ -155,11 +185,7 @@ const Header = () => {
                 <Button 
                   className="w-full mt-2" 
                   variant="outline"
-                  onClick={() => {
-                    closeMenu();
-                    // Sign out logic would go here
-                    navigate("/");
-                  }}
+                  onClick={handleSignOut}
                 >
                   Sign Out
                 </Button>

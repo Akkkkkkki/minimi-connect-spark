@@ -1,123 +1,100 @@
 
-/**
- * This file will be used to initialize the Supabase client once the connection is established.
- * For now, we'll just create placeholders and examples for the future integration.
- */
-
-/*
-// Example implementation once Supabase is integrated:
-
 import { createClient } from '@supabase/supabase-js';
+import { toast } from '@/components/ui/sonner';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize the Supabase client
+const supabaseUrl = "https://uiswjpjgxsrnfxerzbrw.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpc3dqcGpneHNybmZ4ZXJ6YnJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1NTczNzIsImV4cCI6MjA2MDEzMzM3Mn0.UKVXz2DgQhj2GqeTIIu1WJcDREbL2i6wtQoPJWJA5Y8";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
 
 // Auth helper functions
-export const signIn = async (email: string, password: string) => {
-  return await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
+export const signInWithEmail = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return { user: null, session: null, error };
+    }
+
+    return { user: data.user, session: data.session, error: null };
+  } catch (err: any) {
+    toast.error(err.message || 'An error occurred during sign in');
+    return { user: null, session: null, error: err };
+  }
 };
 
-export const signUp = async (email: string, password: string) => {
-  return await supabase.auth.signUp({
-    email,
-    password
-  });
+export const signUpWithEmail = async (
+  email: string, 
+  password: string, 
+  userData: { name: string; gender: string; birth_month: string; birth_year: string }
+) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: userData.name,
+          gender: userData.gender,
+          birth_month: userData.birth_month,
+          birth_year: userData.birth_year,
+        }
+      }
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return { user: null, session: null, error };
+    }
+
+    return { user: data.user, session: data.session, error: null };
+  } catch (err: any) {
+    toast.error(err.message || 'An error occurred during sign up');
+    return { user: null, session: null, error: err };
+  }
 };
 
 export const signOut = async () => {
-  return await supabase.auth.signOut();
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+      return { error };
+    }
+    return { error: null };
+  } catch (err: any) {
+    toast.error(err.message || 'An error occurred during sign out');
+    return { error: err };
+  }
 };
 
 export const getCurrentUser = async () => {
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return { user: null, error };
+    return { user: data.user, error: null };
+  } catch (err) {
+    return { user: null, error: err };
+  }
 };
-*/
 
-// Placeholder until Supabase is connected
-export const placeholderClient = {
-  message: "This is a placeholder until Supabase is connected through the Lovable integration."
+export const getCurrentSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return { session: null, error };
+    return { session: data.session, error: null };
+  } catch (err) {
+    return { session: null, error: err };
+  }
 };
-
-/**
- * Example database schema for MINIMI once Supabase is connected:
- * 
- * TABLES:
- * 
- * 1. profiles
- *    - id (references auth.users.id)
- *    - name
- *    - gender
- *    - birth_month
- *    - birth_year
- *    - city
- *    - country
- *    - location (point)
- *    - photo_url
- *    - created_at
- *    - updated_at
- * 
- * 2. activities
- *    - id
- *    - creator_id (references profiles.id)
- *    - title
- *    - description
- *    - location_text
- *    - location (point)
- *    - start_time
- *    - end_time
- *    - activity_type (e.g., 'social', 'professional', 'dating', etc.)
- *    - tags (array)
- *    - created_at
- *    - updated_at
- * 
- * 3. questionnaires
- *    - id
- *    - activity_id (references activities.id)
- *    - title
- *    - description
- *    - questions (jsonb)
- *    - created_at
- * 
- * 4. activity_participants
- *    - id
- *    - activity_id (references activities.id)
- *    - profile_id (references profiles.id)
- *    - answers (jsonb)
- *    - status (e.g., 'pending', 'completed')
- *    - created_at
- *    - updated_at
- * 
- * 5. match_rounds
- *    - id
- *    - activity_id (references activities.id)
- *    - name
- *    - scheduled_time
- *    - status (e.g., 'scheduled', 'completed', 'cancelled')
- *    - created_at
- *    - updated_at
- * 
- * 6. matches
- *    - id
- *    - round_id (references match_rounds.id)
- *    - profile_id_1 (references profiles.id)
- *    - profile_id_2 (references profiles.id)
- *    - match_score (0-100)
- *    - match_reason
- *    - icebreaker
- *    - created_at
- * 
- * 7. match_feedback
- *    - id
- *    - match_id (references matches.id)
- *    - profile_id (references profiles.id)
- *    - is_positive (boolean)
- *    - reason (null if positive)
- *    - created_at
- */
-

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, RequireAuth, RedirectIfAuthenticated } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
@@ -23,19 +24,63 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/activities" element={<ActivitiesPage />} />
-          <Route path="/how-it-works" element={<HowItWorksPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/profile" element={<ProfileDashboard />} />
-          <Route path="/activity-management" element={<ActivityManagement />} />
-          <Route path="/matches" element={<MatchResults />} />
-          <Route path="/create-activity" element={<CreateActivity />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/activities" element={<ActivitiesPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route 
+              path="/login" 
+              element={
+                <RedirectIfAuthenticated>
+                  <LoginPage />
+                </RedirectIfAuthenticated>
+              } 
+            />
+            <Route 
+              path="/signup" 
+              element={
+                <RedirectIfAuthenticated>
+                  <SignupPage />
+                </RedirectIfAuthenticated>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <RequireAuth>
+                  <ProfileDashboard />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/activity-management" 
+              element={
+                <RequireAuth>
+                  <ActivityManagement />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/matches" 
+              element={
+                <RequireAuth>
+                  <MatchResults />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/create-activity" 
+              element={
+                <RequireAuth>
+                  <CreateActivity />
+                </RequireAuth>
+              } 
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
+import { signUpWithEmail } from "@/lib/supabase";
+import { toast } from "@/components/ui/sonner";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -55,6 +57,8 @@ const years = generateYearOptions();
 const SignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -69,9 +73,30 @@ const SignupForm = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof signupSchema>) => {
-    console.log("Form submitted:", values);
-    // We'll implement actual signup functionality when we connect to Supabase
+  const onSubmit = async (values: z.infer<typeof signupSchema>) => {
+    try {
+      setIsLoading(true);
+      const { name, email, password, gender, birthMonth, birthYear } = values;
+      
+      const { error } = await signUpWithEmail(email, password, {
+        name,
+        gender,
+        birth_month: birthMonth,
+        birth_year: birthYear,
+      });
+      
+      if (error) {
+        toast.error(`Signup failed: ${error.message}`);
+        return;
+      }
+      
+      toast.success("Account created successfully! Please check your email to confirm your account.");
+      navigate('/login');
+    } catch (err: any) {
+      toast.error(`Signup error: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -240,8 +265,12 @@ const SignupForm = () => {
           />
           
           <div className="pt-2">
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full bg-accent hover:bg-accent/90"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </div>
           

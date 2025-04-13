@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,29 +15,44 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { signInWithEmail } from "@/lib/supabase";
+import { toast } from "@/components/ui/sonner";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
 });
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
-  const onSubmit = (values: z.infer<typeof loginSchema>) => {
-    console.log("Form submitted:", values);
-    // We'll implement actual login functionality when we connect to Supabase
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await signInWithEmail(values.email, values.password);
+      
+      if (error) {
+        toast.error(`Login failed: ${error.message}`);
+        return;
+      }
+
+      toast.success("Logged in successfully!");
+      navigate('/');
+    } catch (err: any) {
+      toast.error(`Login error: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,7 +80,12 @@ const LoginForm = () => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Password</FormLabel>
+                  <Link to="/forgot-password" className="text-sm text-accent hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <FormControl>
                   <div className="relative">
                     <Input 
@@ -87,31 +107,13 @@ const LoginForm = () => {
             )}
           />
           
-          <div className="flex items-center justify-between">
-            <FormField
-              control={form.control}
-              name="rememberMe"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2 space-y-0">
-                  <FormControl>
-                    <Checkbox 
-                      checked={field.value} 
-                      onCheckedChange={field.onChange} 
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm cursor-pointer">Remember me</FormLabel>
-                </FormItem>
-              )}
-            />
-            
-            <Link to="/forgot-password" className="text-sm text-accent hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-          
           <div className="pt-2">
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-              Log In
+            <Button 
+              type="submit" 
+              className="w-full bg-accent hover:bg-accent/90"
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Log in"}
             </Button>
           </div>
           
