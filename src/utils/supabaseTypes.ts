@@ -101,6 +101,11 @@ export interface Database {
         Insert: Omit<Match, 'id' | 'created_at'>;
         Update: Partial<Omit<Match, 'id' | 'created_at'>>;
       };
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'id'>;
+        Update: Partial<Omit<Profile, 'id'>>;
+      };
     };
     Views: {
       [_ in never]: never;

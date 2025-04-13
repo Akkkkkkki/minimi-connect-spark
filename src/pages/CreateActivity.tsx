@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const activitySchema = z.object({
   title: z.string().min(3, {
@@ -42,11 +44,14 @@ const activitySchema = z.object({
   tags: z.string().optional(),
 });
 
+type ActivityFormValues = z.infer<typeof activitySchema>;
+
 const CreateActivity = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   
-  const form = useForm<z.infer<typeof activitySchema>>({
+  const form = useForm<ActivityFormValues>({
     resolver: zodResolver(activitySchema),
     defaultValues: {
       title: "",
@@ -59,18 +64,43 @@ const CreateActivity = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof activitySchema>) => {
+  const onSubmit = async (values: ActivityFormValues) => {
+    if (!user) {
+      toast.error("You must be logged in to create an activity");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      // This would be replaced with actual Supabase API call
-      console.log("Creating activity:", values);
+      // Format the date and time into a single datetime string
+      const startDateTime = new Date(`${values.startDate}T${values.startTime}`);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Process tags if provided
+      const tagsList = values.tags 
+        ? values.tags.split(',').map(tag => tag.trim()) 
+        : [];
+      
+      // Insert the activity into Supabase
+      const { data, error } = await supabase
+        .from('activities')
+        .insert({
+          creator_id: user.id,
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          start_time: startDateTime.toISOString(),
+          activity_type: values.activityType,
+          tags: tagsList
+        })
+        .select('id')
+        .single();
+        
+      if (error) throw error;
       
       toast.success("Activity created successfully!");
-      navigate("/activity-management");
+      // Navigate to the questionnaire builder for this activity
+      navigate(`/activity/${data.id}/questionnaire`);
     } catch (error) {
       console.error("Error creating activity:", error);
       toast.error("Failed to create activity", {
