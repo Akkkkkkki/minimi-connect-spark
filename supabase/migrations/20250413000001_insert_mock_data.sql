@@ -3,14 +3,15 @@
 INSERT INTO public.activities (id, creator_id, title, description, location, start_time, activity_type, tags)
 SELECT 
     gen_random_uuid(), 
-    '00000000-0000-0000-0000-000000000000', -- replace with actual creator ID when testing
+    auth.uid(), -- Uses the current user's ID instead of a hardcoded one
     'Speed Networking Event', 
     'Meet professionals from various industries and expand your network.', 
     'Downtown Conference Center', 
     now() + interval '7 days',
     'professional',
     ARRAY['networking', 'business', 'career']
-WHERE NOT EXISTS (SELECT 1 FROM public.activities LIMIT 1);
+WHERE NOT EXISTS (SELECT 1 FROM public.activities LIMIT 1)
+AND auth.uid() IS NOT NULL;
 
 -- Insert a mock questionnaire for the first activity
 WITH first_activity AS (
