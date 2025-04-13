@@ -1,116 +1,52 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, RequireAuth, RedirectIfAuthenticated } from "@/context/AuthContext";
-import Index from "./pages/Index";
-import ActivitiesPage from "./pages/ActivitiesPage";
+
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import Index from "@/pages/Index";
+import LoginPage from "@/pages/LoginPage";
+import SignupPage from "@/pages/SignupPage";
+import NotFound from "@/pages/NotFound";
+import { AuthProvider } from "@/context/AuthContext";
+import ActivitiesPage from "@/pages/ActivitiesPage";
+import ActivityDetailsPage from "@/pages/ActivityDetailsPage";
+import ProfileDashboard from "@/pages/ProfileDashboard";
+import MyActivitiesPage from "@/pages/MyActivitiesPage";
+import CreateActivity from "@/pages/CreateActivity";
+import ActivityManagement from "@/pages/ActivityManagement";
+import MatchResults from "@/pages/MatchResults";
+import MatchHistoryPage from "@/pages/MatchHistoryPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import NotFound from "./pages/NotFound";
-import ProfileDashboard from "./pages/ProfileDashboard";
-import ActivityManagement from "./pages/ActivityManagement";
-import MatchResults from "./pages/MatchResults";
-import MatchHistoryPage from "./pages/MatchHistoryPage";
-import CreateActivity from "./pages/CreateActivity";
-import MyActivitiesPage from "./pages/MyActivitiesPage";
-import ActivityDetailsPage from "./pages/ActivityDetailsPage";
+import QuestionnaireBuilderPage from "./pages/QuestionnaireBuilderPage";
+import ParticipantQuestionnairePage from "./pages/ParticipantQuestionnairePage";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <AuthProvider>
+        <Router>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailsPage />} />
+            <Route path="/activities/:activityId/questionnaire" element={<ParticipantQuestionnairePage />} />
+            <Route path="/profile" element={<ProfileDashboard />} />
+            <Route path="/my-activities" element={<MyActivitiesPage />} />
+            <Route path="/my-activities/:activityId" element={<MyActivitiesPage />} />
+            <Route path="/create-activity" element={<CreateActivity />} />
+            <Route path="/activity-management" element={<ActivityManagement />} />
+            <Route path="/activity-management/:activityId/questionnaire" element={<QuestionnaireBuilderPage />} />
+            <Route path="/matches" element={<MatchResults />} />
+            <Route path="/match-history" element={<MatchHistoryPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
-            <Route 
-              path="/login" 
-              element={
-                <RedirectIfAuthenticated>
-                  <LoginPage />
-                </RedirectIfAuthenticated>
-              } 
-            />
-            <Route 
-              path="/signup" 
-              element={
-                <RedirectIfAuthenticated>
-                  <SignupPage />
-                </RedirectIfAuthenticated>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <RequireAuth>
-                  <ProfileDashboard />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/my-activities" 
-              element={
-                <RequireAuth>
-                  <MyActivitiesPage />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/my-activities/:activityId"
-              element={
-                <RequireAuth>
-                  <MyActivitiesPage />
-                </RequireAuth>
-              }
-            />
-            <Route 
-              path="/activity-management" 
-              element={
-                <RequireAuth>
-                  <ActivityManagement />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/matches" 
-              element={
-                <RequireAuth>
-                  <MatchResults />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/match-history" 
-              element={
-                <RequireAuth>
-                  <MatchHistoryPage />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/create-activity" 
-              element={
-                <RequireAuth>
-                  <CreateActivity />
-                </RequireAuth>
-              } 
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </Router>
+        <Toaster />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;

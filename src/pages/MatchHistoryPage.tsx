@@ -1,9 +1,12 @@
+
 import PageLayout from "@/components/layout/PageLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
 import {
   Select,
   SelectContent,
@@ -14,7 +17,18 @@ import {
 
 const MatchHistoryPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [selectedActivity, setSelectedActivity] = useState("all");
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast.error("Please sign in to view your match history", {
+        description: "You'll be redirected to the login page"
+      });
+      setTimeout(() => navigate("/login"), 1500);
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Mock data for activities - in a real implementation, this would be fetched from Supabase
   const userActivities = [
@@ -70,6 +84,16 @@ const MatchHistoryPage = () => {
     ? allMatches 
     : allMatches.filter(match => match.activityId === selectedActivity);
 
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <div className="space-y-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">Loading...</h1>
+        </div>
+      </PageLayout>
+    );
+  }
+
   if (matches.length === 0) {
     return (
       <PageLayout>
@@ -109,10 +133,10 @@ const MatchHistoryPage = () => {
               <p className="mt-2">
                 {selectedActivity !== "all"
                   ? "Try selecting a different activity or check back later."
-                  : "Check your connections and express interest to create matches!"}
+                  : "Check your recommendations and express interest to create matches!"}
               </p>
               <Button className="mt-4" asChild>
-                <a href="/matches">View Connections</a>
+                <a href="/matches">View Recommendations</a>
               </Button>
             </CardContent>
           </Card>
@@ -226,4 +250,4 @@ const MatchHistoryPage = () => {
   );
 };
 
-export default MatchHistoryPage; 
+export default MatchHistoryPage;

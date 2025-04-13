@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -6,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
 
-interface ConnectionsListProps {
+interface MatchesListProps {
   activityId: string;
 }
 
-interface Connection {
+interface Match {
   id: string;
   name: string;
   avatar?: string;
@@ -20,17 +21,17 @@ interface Connection {
   hasResponded: boolean;
 }
 
-const ConnectionsList = ({ activityId }: ConnectionsListProps) => {
-  const [connections, setConnections] = useState<Connection[]>([]);
+const MatchesList = ({ activityId }: MatchesListProps) => {
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching connections
-    const fetchConnections = async () => {
+    // Simulate fetching matches
+    const fetchMatches = async () => {
       setLoading(true);
       
       // Mock data
-      const mockConnections: Connection[] = [
+      const mockMatches: Match[] = [
         {
           id: "c1",
           name: "Alex Thompson",
@@ -59,12 +60,12 @@ const ConnectionsList = ({ activityId }: ConnectionsListProps) => {
       
       // Simulate network delay
       setTimeout(() => {
-        setConnections(mockConnections);
+        setMatches(mockMatches);
         setLoading(false);
       }, 600);
     };
     
-    fetchConnections();
+    fetchMatches();
   }, [activityId]);
 
   if (loading) {
@@ -85,11 +86,11 @@ const ConnectionsList = ({ activityId }: ConnectionsListProps) => {
     );
   }
 
-  if (connections.length === 0) {
+  if (matches.length === 0) {
     return (
       <Card>
         <CardContent className="py-10 text-center">
-          <p className="text-muted-foreground">No connections found for this activity yet.</p>
+          <p className="text-muted-foreground">No matches found for this activity yet.</p>
         </CardContent>
       </Card>
     );
@@ -98,37 +99,37 @@ const ConnectionsList = ({ activityId }: ConnectionsListProps) => {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        These are the people you connected with during this activity.
+        These are the people you matched with during this activity.
       </p>
       
-      {connections.map((connection) => (
-        <Card key={connection.id}>
+      {matches.map((match) => (
+        <Card key={match.id}>
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
-                {connection.avatar ? (
-                  <AvatarImage src={connection.avatar} alt={connection.name} />
+                {match.avatar ? (
+                  <AvatarImage src={match.avatar} alt={match.name} />
                 ) : (
-                  <AvatarFallback>{connection.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{match.name.charAt(0)}</AvatarFallback>
                 )}
               </Avatar>
               
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">{connection.name}</h3>
-                    <p className="text-sm text-muted-foreground">{connection.matchReason}</p>
+                    <h3 className="font-medium">{match.name}</h3>
+                    <p className="text-sm text-muted-foreground">{match.matchReason}</p>
                   </div>
                   
                   <Badge variant="outline" className="ml-2">
-                    {connection.matchScore}% Match
+                    {match.matchScore}% Match
                   </Badge>
                 </div>
                 
                 <div className="mt-3 p-3 bg-muted rounded-md text-sm italic">
                   <p className="text-muted-foreground">
                     <span className="font-medium text-foreground">Conversation starter:</span>{" "}
-                    {connection.conversationStarter}
+                    {match.conversationStarter}
                   </p>
                 </div>
                 
@@ -147,4 +148,4 @@ const ConnectionsList = ({ activityId }: ConnectionsListProps) => {
   );
 };
 
-export default ConnectionsList; 
+export default MatchesList;
