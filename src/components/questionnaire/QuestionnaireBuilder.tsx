@@ -36,7 +36,6 @@ const QuestionnaireBuilder = () => {
   });
   const [activity, setActivity] = useState<any | null>(null);
   
-  // New question form state
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     text: "",
     type: "text",
@@ -51,7 +50,6 @@ const QuestionnaireBuilder = () => {
       
       setLoading(true);
       try {
-        // Fetch activity information
         const { data: activityData, error: activityError } = await supabase
           .from("activities")
           .select("*")
@@ -61,7 +59,6 @@ const QuestionnaireBuilder = () => {
         if (activityError) throw activityError;
         setActivity(activityData);
 
-        // Fetch questionnaire if it exists
         const { data: questionnaireData, error: questionnaireError } = await supabase
           .from("questionnaires")
           .select("*")
@@ -69,12 +66,10 @@ const QuestionnaireBuilder = () => {
           .single();
 
         if (questionnaireError && questionnaireError.code !== "PGRST116") {
-          // PGRST116 is "no rows returned" - not an error if creating a new questionnaire
           throw questionnaireError;
         }
 
         if (questionnaireData) {
-          // Parse questions JSON if it's stored as a string
           const questions = typeof questionnaireData.questions === 'string'
             ? JSON.parse(questionnaireData.questions)
             : questionnaireData.questions;
@@ -155,7 +150,6 @@ const QuestionnaireBuilder = () => {
     };
 
     if (editingQuestionIndex !== null) {
-      // Update existing question
       const updatedQuestions = [...questionnaire.questions];
       updatedQuestions[editingQuestionIndex] = newQuestionComplete;
       
@@ -165,14 +159,12 @@ const QuestionnaireBuilder = () => {
       });
       setEditingQuestionIndex(null);
     } else {
-      // Add new question
       setQuestionnaire({
         ...questionnaire,
         questions: [...questionnaire.questions, newQuestionComplete]
       });
     }
 
-    // Reset form
     setNewQuestion({
       text: "",
       type: "text",
@@ -231,7 +223,6 @@ const QuestionnaireBuilder = () => {
     setSaving(true);
     try {
       if (questionnaire.id) {
-        // Update existing questionnaire
         const { error } = await supabase
           .from("questionnaires")
           .update({
@@ -243,7 +234,6 @@ const QuestionnaireBuilder = () => {
 
         if (error) throw error;
       } else {
-        // Create new questionnaire
         const { error } = await supabase
           .from("questionnaires")
           .insert({
