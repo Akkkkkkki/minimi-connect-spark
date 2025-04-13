@@ -10,6 +10,10 @@ import HowItWorksPage from "./pages/HowItWorksPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import NotFound from "./pages/NotFound";
+import ProfileDashboard from "./pages/ProfileDashboard";
+import ActivityManagement from "./pages/ActivityManagement";
+import MatchResults from "./pages/MatchResults";
+import CreateActivity from "./pages/CreateActivity";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +29,10 @@ const App = () => (
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/profile" element={<ProfileDashboard />} />
+          <Route path="/activity-management" element={<ActivityManagement />} />
+          <Route path="/matches" element={<MatchResults />} />
+          <Route path="/create-activity" element={<CreateActivity />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

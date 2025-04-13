@@ -1,0 +1,241 @@
+
+import { useState } from "react";
+import PageLayout from "@/components/layout/PageLayout";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "@/components/ui/sonner";
+
+const activitySchema = z.object({
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters.",
+  }),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters.",
+  }),
+  location: z.string().min(3, {
+    message: "Location is required.",
+  }),
+  startDate: z.string().min(1, {
+    message: "Start date is required.",
+  }),
+  startTime: z.string().min(1, {
+    message: "Start time is required.",
+  }),
+  activityType: z.string().min(1, {
+    message: "Activity type is required.",
+  }),
+  tags: z.string().optional(),
+});
+
+const CreateActivity = () => {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<z.infer<typeof activitySchema>>({
+    resolver: zodResolver(activitySchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      location: "",
+      startDate: "",
+      startTime: "",
+      activityType: "social",
+      tags: "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof activitySchema>) => {
+    setIsSubmitting(true);
+    
+    try {
+      // This would be replaced with actual Supabase API call
+      console.log("Creating activity:", values);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success("Activity created successfully!");
+      navigate("/activity-management");
+    } catch (error) {
+      console.error("Error creating activity:", error);
+      toast.error("Failed to create activity", {
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <PageLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-primary">Create Activity</h1>
+        <p className="text-gray-600 text-lg max-w-3xl">
+          Create a new activity for users to join and get matched. Be descriptive to attract the right participants.
+        </p>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Activity Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Networking Coffee Meetup" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Choose a clear, descriptive title for your activity.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe what the activity involves and what participants can expect..." 
+                          className="min-h-32"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide details about your activity, including purpose and expectations.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Central Park, New York" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="activityType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Activity Type</FormLabel>
+                        <FormControl>
+                          <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                            {...field}
+                          >
+                            <option value="social">Social</option>
+                            <option value="professional">Professional</option>
+                            <option value="dating">Dating</option>
+                            <option value="hobby">Hobby</option>
+                            <option value="sports">Sports</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags (comma-separated)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., networking, startup, tech" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Add relevant tags to help users find your activity
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-4">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => navigate("/activity-management")}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating..." : "Create Activity"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </PageLayout>
+  );
+};
+
+export default CreateActivity;
