@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
@@ -16,4 +17,29 @@ export function useIsMobile() {
   }, [])
 
   return !!isMobile
+}
+
+// Add a more flexible media query hook
+export function useMediaQuery(query: string) {
+  const [matches, setMatches] = React.useState<boolean>(false)
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia(query)
+    
+    // Set initial state
+    setMatches(mediaQuery.matches)
+    
+    // Define listener
+    const onChange = () => {
+      setMatches(mediaQuery.matches)
+    }
+    
+    // Add listener
+    mediaQuery.addEventListener("change", onChange)
+    
+    // Clean up
+    return () => mediaQuery.removeEventListener("change", onChange)
+  }, [query])
+
+  return matches
 }
