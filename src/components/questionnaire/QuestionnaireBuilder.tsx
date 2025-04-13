@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,23 +18,7 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, MoveUp, MoveDown, Edit, Save } from "lucide-react";
-
-interface Question {
-  id: string;
-  text: string;
-  type: "multiple_choice" | "text";
-  options?: string[];
-  required: boolean;
-}
-
-interface Questionnaire {
-  id: string;
-  activity_id: string;
-  title: string;
-  description?: string;
-  questions: Question[];
-  created_at?: string;
-}
+import { Question, Questionnaire } from "@/utils/supabaseTypes";
 
 const QuestionnaireBuilder = () => {
   const { activityId } = useParams<{ activityId: string }>();

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,25 +12,11 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
+import { Question, Questionnaire, ActivityParticipant } from "@/utils/supabaseTypes";
 
 interface QuestionnaireFormProps {
   activityId: string;
   isParticipant?: boolean;
-}
-
-interface Question {
-  id: string;
-  text: string;
-  type: "multiple_choice" | "text";
-  options?: string[];
-  required: boolean;
-}
-
-interface Questionnaire {
-  id: string;
-  title: string;
-  description?: string;
-  questions: Question[];
 }
 
 interface Answers {
@@ -48,7 +33,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [activity, setActivity] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
-  const [existingParticipation, setExistingParticipation] = useState<any | null>(null);
+  const [existingParticipation, setExistingParticipation] = useState<ActivityParticipant | null>(null);
 
   useEffect(() => {
     const fetchQuestionnaire = async () => {
