@@ -74,7 +74,7 @@ const MatchHistoryPage = () => {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           <h1 className="text-3xl md:text-4xl font-bold text-primary">Loading...</h1>
         </div>
       </PageLayout>
@@ -84,7 +84,7 @@ const MatchHistoryPage = () => {
   if (matches.length === 0) {
     return (
       <PageLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           <h1 className="text-3xl md:text-4xl font-bold text-primary">Match History</h1>
           <p className="text-gray-600 text-lg max-w-2xl">
             Here are your confirmed matches with mutual interest.
@@ -134,7 +134,7 @@ const MatchHistoryPage = () => {
 
   return (
     <PageLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 mt-4">
         <h1 className="text-3xl md:text-4xl font-bold text-primary">Match History</h1>
         <p className="text-gray-600 text-lg max-w-2xl">
           Here are your confirmed matches with mutual interest.

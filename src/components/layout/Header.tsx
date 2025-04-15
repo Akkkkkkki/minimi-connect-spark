@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -123,7 +122,7 @@ const Header = () => {
                         My Activities
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/matches")}>
-                        Connections
+                        Recommended Profiles
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/match-history")}>
                         Match History
@@ -156,7 +155,6 @@ const Header = () => {
         </div>
       </div>
       
-      {/* Mobile menu */}
       {isMobile && isMenuOpen && (
         <div className="md:hidden absolute top-[64px] left-0 right-0 bg-white border-b border-gray-200 z-20">
           <div className="flex flex-col p-4 space-y-3">

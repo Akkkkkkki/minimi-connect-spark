@@ -14,12 +14,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Define interface for user activity
+interface UserActivity {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string | null;
+}
+
 const MatchResults = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [selectedActivity, setSelectedActivity] = useState("all");
-  const [userActivities, setUserActivities] = useState<any[]>([]);
-  const [currentActivities, setCurrentActivities] = useState<any[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string>("all");
+  const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
+  const [currentActivities, setCurrentActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,7 +102,7 @@ const MatchResults = () => {
   if (isLoading || loading) {
     return (
       <PageLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           <h1 className="text-3xl md:text-4xl font-bold text-primary">Loading...</h1>
         </div>
       </PageLayout>
@@ -103,7 +111,7 @@ const MatchResults = () => {
 
   return (
     <PageLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 mt-4">
         <h1 className="text-3xl md:text-4xl font-bold text-primary">Recommended Profiles</h1>
         <p className="text-gray-600 text-lg max-w-2xl">
           Here are your current recommended profiles. Provide feedback to help us improve your future matches.

@@ -35,6 +35,9 @@ const ActivityDetailsPage = () => {
         if (activityError || !activity) {
           setActivityExists(false);
           setLoading(false);
+          // Redirect back to activities page after a short delay
+          toast.error("Activity not found");
+          setTimeout(() => navigate('/activities'), 1500);
           return;
         }
         
@@ -56,7 +59,7 @@ const ActivityDetailsPage = () => {
     };
     
     checkActivity();
-  }, [activityId]);
+  }, [activityId, navigate]);
 
   const handleJoin = () => {
     if (!activityId || !hasQuestionnaire) {
@@ -126,7 +129,7 @@ const ActivityDetailsPage = () => {
             </Button>
           ) : (
             <Button size="lg" variant="outline" disabled>
-              Questionnaire not available
+              Questionnaire not available yet
             </Button>
           )}
         </div>
