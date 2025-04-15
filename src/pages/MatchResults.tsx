@@ -14,19 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface UserActivity {
-  id: string;
-  name: string;
-  startTime: string;
-  endTime: string | null;
-}
-
 const MatchResults = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedActivity, setSelectedActivity] = useState("all");
-  const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
-  const [currentActivities, setCurrentActivities] = useState<UserActivity[]>([]);
+  const [userActivities, setUserActivities] = useState<any[]>([]);
+  const [currentActivities, setCurrentActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,7 +78,7 @@ const MatchResults = () => {
         setCurrentActivities(ongoing);
         
         // If there are ongoing activities, set the first one as default selection
-        if (ongoing.length > 0) {
+        if (ongoing.length > 0 && ongoing[0]) {
           setSelectedActivity(ongoing[0].id);
         }
       } catch (error) {
