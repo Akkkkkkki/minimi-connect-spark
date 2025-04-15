@@ -78,7 +78,7 @@ const MatchResults = () => {
         setCurrentActivities(ongoing);
         
         // If there are ongoing activities, set the first one as default selection
-        if (ongoing.length > 0) {
+        if (ongoing.length > 0 && ongoing[0]) {
           setSelectedActivity(ongoing[0].id);
         }
       } catch (error) {
