@@ -33,7 +33,6 @@ function App() {
             <Route path="/activities/:activityId/questionnaire" element={<ParticipantQuestionnairePage />} />
             <Route path="/profile" element={<ProfileDashboard />} />
             <Route path="/my-activities" element={<MyActivitiesPage />} />
-            <Route path="/my-activities/:activityId" element={<MyActivitiesPage />} />
             <Route path="/create-activity" element={<CreateActivity />} />
             <Route path="/activity-management" element={<ActivityManagement />} />
             <Route path="/activity-management/:activityId/questionnaire" element={<QuestionnaireBuilderPage />} />

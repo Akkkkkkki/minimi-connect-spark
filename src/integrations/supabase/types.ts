@@ -9,7 +9,280 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          creator_id: string
+          description: string
+          end_time: string | null
+          id: number
+          location: string
+          start_time: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          creator_id: string
+          description: string
+          end_time?: string | null
+          id?: never
+          location: string
+          start_time: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          creator_id?: string
+          description?: string
+          end_time?: string | null
+          id?: never
+          location?: string
+          start_time?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      activity_participants: {
+        Row: {
+          activity_id: number
+          answers: Json | null
+          created_at: string
+          id: number
+          profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id: number
+          answers?: Json | null
+          created_at?: string
+          id?: never
+          profile_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: number
+          answers?: Json | null
+          created_at?: string
+          id?: never
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_participants_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_feedback: {
+        Row: {
+          created_at: string
+          id: number
+          is_positive: boolean
+          match_id: number
+          profile_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          is_positive: boolean
+          match_id: number
+          profile_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          is_positive?: boolean
+          match_id?: number
+          profile_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_feedback_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_rounds: {
+        Row: {
+          activity_id: number
+          created_at: string
+          id: number
+          name: string
+          scheduled_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id: number
+          created_at?: string
+          id?: never
+          name: string
+          scheduled_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: number
+          created_at?: string
+          id?: never
+          name?: string
+          scheduled_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_rounds_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          icebreaker: string | null
+          id: number
+          match_reason: string | null
+          match_score: number
+          profile_id_1: string
+          profile_id_2: string
+          round_id: number
+        }
+        Insert: {
+          created_at?: string
+          icebreaker?: string | null
+          id?: never
+          match_reason?: string | null
+          match_score: number
+          profile_id_1: string
+          profile_id_2: string
+          round_id: number
+        }
+        Update: {
+          created_at?: string
+          icebreaker?: string | null
+          id?: never
+          match_reason?: string | null
+          match_score?: number
+          profile_id_1?: string
+          profile_id_2?: string
+          round_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "match_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          birth_month: number | null
+          birth_year: number | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          first_name: string | null
+          id: number
+          last_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_month?: number | null
+          birth_year?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: never
+          last_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_month?: number | null
+          birth_year?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: never
+          last_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      questionnaires: {
+        Row: {
+          activity_id: number
+          created_at: string
+          description: string | null
+          id: number
+          questions: Json
+          title: string
+        }
+        Insert: {
+          activity_id: number
+          created_at?: string
+          description?: string | null
+          id?: never
+          questions?: Json
+          title: string
+        }
+        Update: {
+          activity_id?: number
+          created_at?: string
+          description?: string | null
+          id?: never
+          questions?: Json
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaires_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
