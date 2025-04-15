@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PageLayout from "@/components/layout/PageLayout";
@@ -6,39 +7,64 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import ActivityDetails from "@/components/activities/ActivityDetails";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 const ActivityDetailsPage = () => {
   const { activityId } = useParams<{ activityId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activityExists, setActivityExists] = useState(false);
+  const [hasQuestionnaire, setHasQuestionnaire] = useState(false);
 
   useEffect(() => {
-    // In a real app this would check if the activity exists
+    // Check if the activity exists and has a questionnaire
     const checkActivity = async () => {
+      if (!activityId) return;
+      
       setLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        // For demo purposes, we'll assume all IDs exist
+      try {
+        // Check if activity exists
+        const { data: activity, error: activityError } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('id', activityId)
+          .single();
+          
+        if (activityError || !activity) {
+          setActivityExists(false);
+          setLoading(false);
+          return;
+        }
+        
         setActivityExists(true);
+        
+        // Check if questionnaire exists for this activity
+        const { data: questionnaire, error: questionnaireError } = await supabase
+          .from('questionnaires')
+          .select('*')
+          .eq('activity_id', activityId);
+          
+        setHasQuestionnaire(questionnaire && questionnaire.length > 0);
+      } catch (error) {
+        console.error("Error checking activity:", error);
+        toast.error("Failed to load activity data");
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     };
     
-    if (activityId) {
-      checkActivity();
-    } else {
-      setLoading(false);
-    }
+    checkActivity();
   }, [activityId]);
 
   const handleJoin = () => {
-    // In a real app, this would register the user for the activity
-    // and redirect to the questionnaire
-    if (activityId) {
-      navigate(`/activities/${activityId}/questionnaire`);
+    if (!activityId || !hasQuestionnaire) {
+      toast.error("This activity doesn't have a questionnaire yet");
+      return;
     }
+    
+    navigate(`/activities/${activityId}/questionnaire`);
   };
 
   const handleBack = () => {
@@ -94,13 +120,19 @@ const ActivityDetailsPage = () => {
         <ActivityDetails activityId={activityId} />
         
         <div className="flex justify-center mt-8">
-          <Button size="lg" onClick={handleJoin}>
-            Join This Activity
-          </Button>
+          {hasQuestionnaire ? (
+            <Button size="lg" onClick={handleJoin}>
+              Join This Activity
+            </Button>
+          ) : (
+            <Button size="lg" variant="outline" disabled>
+              Questionnaire not available
+            </Button>
+          )}
         </div>
       </div>
     </PageLayout>
   );
 };
 
-export default ActivityDetailsPage; 
+export default ActivityDetailsPage;

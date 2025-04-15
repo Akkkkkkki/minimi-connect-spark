@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react";
+import { MessageCircle, ThumbsUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -38,6 +38,7 @@ const MatchHistoryPage = () => {
   ];
 
   // Mock data for confirmed matches - would come from Supabase in real implementation
+  // This would only include matches where the user has provided positive feedback
   const allMatches = [
     {
       id: "1",
@@ -49,21 +50,7 @@ const MatchHistoryPage = () => {
       matchReason: "You both share interests in AI and startups, plus you're both early risers who enjoy a morning coffee chat!",
       icebreaker: "Ask about their favorite AI application they've seen recently.",
       photoUrl: "https://i.pravatar.cc/150?img=68",
-      feedbackGiven: true,
       feedback: "positive"
-    },
-    {
-      id: "2",
-      name: "Riley Chen",
-      activityName: "Hiking Club Meetup",
-      activityId: "2",
-      matchDate: "2025-02-28",
-      matchScore: 78,
-      matchReason: "Both of you love outdoor activities and photography. Riley has also visited 3 of the same national parks as you!",
-      icebreaker: "What's your favorite hiking spot near the city?",
-      photoUrl: "https://i.pravatar.cc/150?img=35",
-      feedbackGiven: true,
-      feedback: "negative"
     },
     {
       id: "3",
@@ -75,7 +62,7 @@ const MatchHistoryPage = () => {
       matchReason: "You both have startup experience and complementary skills - your marketing background pairs well with Jordan's technical expertise.",
       icebreaker: "What inspired you to join Startup Weekend?",
       photoUrl: "https://i.pravatar.cc/150?img=12",
-      feedbackGiven: false,
+      feedback: "positive"
     }
   ];
 
@@ -211,34 +198,12 @@ const MatchHistoryPage = () => {
                   <div className="text-sm">
                     <span className="font-medium">Match score:</span> {match.matchScore}%
                   </div>
-                  <div>
-                    {match.feedbackGiven ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Your feedback:</span>
-                        {match.feedback === "positive" ? (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <ThumbsUp size={16} />
-                            Good match
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-red-600">
-                            <ThumbsDown size={16} />
-                            Not a fit
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="gap-1">
-                          <ThumbsDown size={16} />
-                          <span className="hidden md:inline">Not a fit</span>
-                        </Button>
-                        <Button size="sm" variant="default" className="gap-1">
-                          <ThumbsUp size={16} />
-                          <span className="hidden md:inline">Good match</span>
-                        </Button>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Your feedback:</span>
+                    <span className="flex items-center gap-1 text-green-600">
+                      <ThumbsUp size={16} />
+                      Good match
+                    </span>
                   </div>
                 </div>
               </CardContent>

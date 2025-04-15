@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -15,27 +16,82 @@ import {
 
 const MatchResults = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedActivity, setSelectedActivity] = useState("all");
-
-  // Mock data for activities - in a real implementation, this would be fetched from Supabase
-  const userActivities = [
-    { id: "1", name: "Tech Networking Coffee" },
-    { id: "2", name: "Hiking Club Meetup" },
-    { id: "3", name: "Startup Weekend" },
-  ];
+  const [userActivities, setUserActivities] = useState<any[]>([]);
+  const [currentActivities, setCurrentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Redirect if not authenticated
     if (!isLoading && !isAuthenticated) {
-      toast.error("Please sign in to view your matches", {
+      toast.error("Please sign in to view your recommendations", {
         description: "You'll be redirected to the login page"
       });
       setTimeout(() => navigate("/login"), 1500);
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  if (isLoading) {
+  useEffect(() => {
+    const fetchUserActivities = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        
+        const now = new Date().toISOString();
+        
+        // Fetch user's joined activities
+        const { data: activities, error } = await supabase
+          .from('activity_participants')
+          .select(`
+            activity_id,
+            activities (
+              id, 
+              title, 
+              start_time,
+              end_time
+            )
+          `)
+          .eq('profile_id', user.id);
+          
+        if (error) throw error;
+        
+        const processedActivities = activities
+          .filter(item => item.activities) // Filter out any null activities
+          .map(item => ({
+            id: item.activities.id,
+            name: item.activities.title,
+            startTime: item.activities.start_time,
+            endTime: item.activities.end_time || null
+          }));
+        
+        setUserActivities(processedActivities);
+        
+        // Find current/ongoing activities
+        const ongoing = processedActivities.filter(activity => {
+          const isStarted = activity.startTime <= now;
+          const isNotEnded = !activity.endTime || activity.endTime > now;
+          return isStarted && isNotEnded;
+        });
+        
+        setCurrentActivities(ongoing);
+        
+        // If there are ongoing activities, set the first one as default selection
+        if (ongoing.length > 0) {
+          setSelectedActivity(ongoing[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserActivities();
+  }, [user]);
+
+  if (isLoading || loading) {
     return (
       <PageLayout>
         <div className="space-y-6">
@@ -48,7 +104,7 @@ const MatchResults = () => {
   return (
     <PageLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary">Your Recommendations</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-primary">Recommended Profiles</h1>
         <p className="text-gray-600 text-lg max-w-2xl">
           Here are your current recommended profiles. Provide feedback to help us improve your future matches.
         </p>

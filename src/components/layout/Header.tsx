@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -31,7 +32,7 @@ const Header = () => {
   const authenticatedNavItems = [
     { label: "Profile", path: "/profile" },
     { label: "My Activities", path: "/my-activities" },
-    { label: "Connections", path: "/matches" },
+    { label: "Recommended Profiles", path: "/matches" },
     { label: "Match History", path: "/match-history" },
     { label: "Organizer Portal", path: "/activity-management" }
   ];
