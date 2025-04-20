@@ -82,17 +82,8 @@ const MatchList = ({ activityId }: MatchListProps) => {
             match_reason,
             icebreaker,
             created_at,
-            round:round_id (
-              activity:activity_id (
-                title,
-                id
-              )
-            ),
-            profile:profile_id_2 (
-              first_name,
-              last_name,
-              avatar_url
-            )
+            round_id,
+            profile_id_2
           `)
           .eq('profile_id_1', user.id);
 
@@ -118,23 +109,98 @@ const MatchList = ({ activityId }: MatchListProps) => {
           throw error;
         }
         
+        // Fetch profiles and round/activity data separately to avoid RLS issues
+        const profileIds = data?.map(match => match.profile_id_2) || [];
+        const roundIds = data?.map(match => match.round_id).filter(Boolean) || [];
+        
+        let profileData = {};
+        let roundActivityData = {};
+        
+        // Fetch profiles
+        if (profileIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profile')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', profileIds);
+            
+          if (profileError) {
+            console.error("Error fetching profiles:", profileError);
+          } else if (profiles) {
+            profileData = profiles.reduce((acc, profile) => {
+              acc[profile.id] = profile;
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Fetch round and activity data
+        if (roundIds.length > 0) {
+          const { data: rounds, error: roundError } = await supabase
+            .from('match_round')
+            .select(`
+              id, 
+              activity_id
+            `)
+            .in('id', roundIds);
+            
+          if (roundError) {
+            console.error("Error fetching rounds:", roundError);
+          } else if (rounds && rounds.length > 0) {
+            // Get activity ids from rounds
+            const activityIds = rounds.map(round => round.activity_id).filter(Boolean);
+            
+            // Create a map of round IDs to activity IDs
+            const roundToActivityMap = rounds.reduce((acc, round) => {
+              acc[round.id] = round.activity_id;
+              return acc;
+            }, {});
+            
+            // Fetch activities
+            if (activityIds.length > 0) {
+              const { data: activities, error: activityError } = await supabase
+                .from('activity')
+                .select('id, title')
+                .in('id', activityIds);
+                
+              if (activityError) {
+                console.error("Error fetching activities:", activityError);
+              } else if (activities) {
+                // Create a map of activity IDs to activity data
+                const activityMap = activities.reduce((acc, activity) => {
+                  acc[activity.id] = activity;
+                  return acc;
+                }, {});
+                
+                // Associate rounds with their activities
+                roundActivityData = roundIds.reduce((acc, roundId) => {
+                  const activityId = roundToActivityMap[roundId];
+                  acc[roundId] = activityMap[activityId] || null;
+                  return acc;
+                }, {});
+              }
+            }
+          }
+        }
+        
         // Process the matches data
         const processedMatches: ProcessedMatch[] = [];
         
         if (data) {
-          for (const match of data as any[]) {
-            // Ensure that the structure matches our expected shapes
-            if (match && match.profile && match.round && match.round.activity) {
+          for (const match of data) {
+            const profile = profileData[match.profile_id_2];
+            const activity = roundActivityData[match.round_id];
+            
+            if (profile && activity) {
               processedMatches.push({
                 id: match.id.toString(),
-                name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',
-                activityName: match.round.activity.title || 'Unnamed Activity',
-                activityId: match.round.activity.id.toString(),
+                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
+                activityName: activity.title || 'Unnamed Activity',
+                activityId: activity.id.toString(),
                 matchDate: new Date(match.created_at).toISOString().split('T')[0],
                 matchScore: match.match_score,
                 matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
                 icebreaker: match.icebreaker || 'What brings you to this activity?',
-                photoUrl: match.profile.avatar_url,
+                photoUrl: profile.avatar_url,
               });
             }
           }
@@ -142,8 +208,24 @@ const MatchList = ({ activityId }: MatchListProps) => {
         
         setMatches(processedMatches);
       } catch (error) {
-        console.error("Error fetching matches:", error);
-        toast.error("Failed to load matches");
+        // Log detailed error information for debugging
+        console.error("MatchList Error:", {
+          error,
+          user: user?.id,
+          activityId,
+          // Log the raw query for debugging
+          query: `match table with profile_id_1=${user?.id} ${activityId && activityId !== 'all' ? 
+            `and filtered by activity ${activityId}` : ''}`
+        });
+        
+        // Add informative error for the user
+        if (error.code === "PGRST116") {
+          toast.error("Permission denied: You don't have access to this data");
+        } else if (error.code === "42P01") {
+          toast.error("Table not found: Database configuration issue");
+        } else {
+          toast.error(`Failed to load matches: ${error.message || "Unknown error"}`);
+        }
       } finally {
         setLoading(false);
       }

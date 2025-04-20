@@ -57,11 +57,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
             match_score,
             match_reason,
             icebreaker,
-            profile:profile_id_2 (
-              first_name,
-              last_name,
-              avatar_url
-            ),
+            profile_id_2,
             match_feedback (
               id
             )
@@ -83,18 +79,39 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
           }
         }
         
+        // Execute the query to get matches
         const { data, error } = await query;
         
         if (error) throw error;
+        
+        // If we have matches, fetch the profile data separately (avoids RLS issues)
+        const profileIds = data?.map(match => match.profile_id_2) || [];
+        let profileData = {};
+        
+        if (profileIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profile')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', profileIds);
+            
+          if (profileError) {
+            console.error("Error fetching profiles:", profileError);
+          } else if (profiles) {
+            // Create a lookup object for easy access
+            profileData = profiles.reduce((acc, profile) => {
+              acc[profile.id] = profile;
+              return acc;
+            }, {});
+          }
+        }
         
         const processedMatches: Match[] = [];
         
         if (data) {
           for (const match of data) {
-            if (match.profile) {
-              // Get the profile object from array if needed
-              const profile = Array.isArray(match.profile) ? match.profile[0] : match.profile;
-              
+            const profile = profileData[match.profile_id_2];
+            
+            if (profile) {
               processedMatches.push({
                 id: match.id.toString(),
                 name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
@@ -110,8 +127,26 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
         
         setMatches(processedMatches);
       } catch (error) {
-        console.error("Error fetching matches:", error);
-        toast.error("Failed to load connections");
+        // Log detailed error information for debugging
+        console.error("ConnectionsList Error:", {
+          error,
+          user: user?.id,
+          activityId,
+          // Log the raw query for debugging
+          query: `match table with profile_id_1=${user?.id} ${activityId && activityId !== 'all' ? 
+            `and round_id in [rounds for activity ${activityId}]` : ''}`
+        });
+        
+        // Add informative error for the user
+        if (error.code === "PGRST116") {
+          toast.error("Permission denied: You don't have access to this data");
+        } else if (error.code === "42P01") {
+          toast.error("Table not found: Database configuration issue");
+        } else {
+          toast.error(`Failed to load connections: ${error.message || "Unknown error"}`);
+        }
+        
+        setLoading(false);
       } finally {
         setLoading(false);
       }

@@ -80,16 +80,8 @@ const MatchHistory = () => {
             match_reason,
             icebreaker,
             created_at,
-            round:round_id (
-              activity:activity_id (
-                title
-              )
-            ),
-            profile:profile_id_2 (
-              first_name,
-              last_name,
-              avatar_url
-            )
+            round_id,
+            profile_id_2
           `)
           .eq('profile_id_1', user.id)
           .order('created_at', { ascending: false });
@@ -104,25 +96,100 @@ const MatchHistory = () => {
         
         if (feedbackError) throw feedbackError;
         
+        // Fetch profiles and round/activity data separately
+        const profileIds = matchesData?.map(match => match.profile_id_2) || [];
+        const roundIds = matchesData?.map(match => match.round_id).filter(Boolean) || [];
+        
+        let profileData = {};
+        let roundActivityData = {};
+        
+        // Fetch profiles
+        if (profileIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profile')
+            .select('id, first_name, last_name, avatar_url')
+            .in('id', profileIds);
+            
+          if (profileError) {
+            console.error("Error fetching profiles:", profileError);
+          } else if (profiles) {
+            profileData = profiles.reduce((acc, profile) => {
+              acc[profile.id] = profile;
+              return acc;
+            }, {});
+          }
+        }
+        
+        // Fetch round and activity data
+        if (roundIds.length > 0) {
+          const { data: rounds, error: roundError } = await supabase
+            .from('match_round')
+            .select(`
+              id, 
+              activity_id
+            `)
+            .in('id', roundIds);
+            
+          if (roundError) {
+            console.error("Error fetching rounds:", roundError);
+          } else if (rounds && rounds.length > 0) {
+            // Get activity ids from rounds
+            const activityIds = rounds.map(round => round.activity_id).filter(Boolean);
+            
+            // Create a map of round IDs to activity IDs
+            const roundToActivityMap = rounds.reduce((acc, round) => {
+              acc[round.id] = round.activity_id;
+              return acc;
+            }, {});
+            
+            // Fetch activities
+            if (activityIds.length > 0) {
+              const { data: activities, error: activityError } = await supabase
+                .from('activity')
+                .select('id, title')
+                .in('id', activityIds);
+                
+              if (activityError) {
+                console.error("Error fetching activities:", activityError);
+              } else if (activities) {
+                // Create a map of activity IDs to activity data
+                const activityMap = activities.reduce((acc, activity) => {
+                  acc[activity.id] = activity;
+                  return acc;
+                }, {});
+                
+                // Associate rounds with their activities
+                roundActivityData = roundIds.reduce((acc, roundId) => {
+                  const activityId = roundToActivityMap[roundId];
+                  acc[roundId] = activityMap[activityId] || null;
+                  return acc;
+                }, {});
+              }
+            }
+          }
+        }
+        
         // Process the matches data with feedback information
         const processedMatches: ProcessedMatch[] = [];
         
         if (matchesData) {
-          for (const match of matchesData as any[]) {
-            // Ensure the structure matches our expected types
-            if (match && match.profile && match.round && match.round.activity) {
-              // Find feedback for this match
-              const feedback = feedbackData?.find((f) => f.match_id === match.id);
-              
+          for (const match of matchesData) {
+            const profile = profileData[match.profile_id_2];
+            const activity = roundActivityData[match.round_id];
+            
+            // Find feedback for this match
+            const feedback = feedbackData?.find((f) => f.match_id === match.id);
+            
+            if (profile && activity) {
               processedMatches.push({
                 id: match.id.toString(),
-                name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',
-                activityName: match.round.activity.title || 'Unnamed Activity',
+                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
+                activityName: activity.title || 'Unnamed Activity',
                 matchDate: new Date(match.created_at).toISOString().split('T')[0],
                 matchScore: match.match_score,
                 matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
                 icebreaker: match.icebreaker || 'What brings you to this activity?',
-                photoUrl: match.profile.avatar_url,
+                photoUrl: profile.avatar_url,
                 feedbackGiven: !!feedback,
                 feedback: feedback ? (feedback.is_positive ? "positive" : "negative") : undefined,
               });
@@ -132,8 +199,22 @@ const MatchHistory = () => {
         
         setMatches(processedMatches);
       } catch (error) {
-        console.error("Error fetching match history:", error);
-        toast.error("Failed to load match history");
+        // Log detailed error information for debugging
+        console.error("MatchHistory Error:", {
+          error,
+          user: user?.id,
+          // Log the query info for debugging
+          query: `match table with profile_id_1=${user?.id} ordered by created_at DESC`
+        });
+        
+        // Add informative error for the user
+        if (error.code === "PGRST116") {
+          toast.error("Permission denied: You don't have access to this data");
+        } else if (error.code === "42P01") {
+          toast.error("Table not found: Database configuration issue");
+        } else {
+          toast.error(`Failed to load match history: ${error.message || "Unknown error"}`);
+        }
       } finally {
         setLoading(false);
       }

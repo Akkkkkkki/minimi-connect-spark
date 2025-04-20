@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -69,13 +68,55 @@ const ProfileInfo = () => {
       
       try {
         setLoading(true);
+        
+        // First, try to get the profile
         const { data, error } = await supabase
           .from('profile')
           .select('*')
           .eq('id', user.id)
           .single();
           
-        if (error) throw error;
+        // If profile not found, create a new one
+        if (error && error.code === 'PGRST116') {
+          console.log('Profile not found, creating new profile');
+          
+          // Create a new profile for the user
+          const { error: insertError } = await supabase
+            .from('profile')
+            .insert([
+              { 
+                id: user.id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ]);
+            
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+            toast.error('Failed to create your profile');
+            setLoading(false);
+            return;
+          }
+          
+          // Successfully created, now set default profile values
+          const defaultProfile: ProfileFormValues = {
+            firstName: "",
+            lastName: "",
+            birthMonth: "",
+            birthYear: "",
+            city: "",
+            country: "",
+            bio: "",
+          };
+          
+          setProfileData(defaultProfile);
+          form.reset(defaultProfile);
+          setLoading(false);
+          return;
+        } else if (error) {
+          // If it's not a "no rows returned" error, throw it
+          throw error;
+        }
         
         // Map database fields to form fields
         const profileValues: ProfileFormValues = {
