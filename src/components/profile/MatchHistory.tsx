@@ -1,47 +1,212 @@
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/components/ui/sonner';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
+interface ProcessedMatch {
+  id: string;
+  name: string;
+  activityName: string;
+  matchDate: string;
+  matchScore: number;
+  matchReason: string;
+  icebreaker: string;
+  photoUrl: string | null;
+  feedbackGiven: boolean;
+  feedback?: "positive" | "negative";
+}
 
 const MatchHistory = () => {
-  // Mock data - would come from Supabase in real implementation
-  const matches = [
-    {
-      id: "1",
-      name: "Alex Johnson",
-      activityName: "Tech Networking Coffee",
-      matchDate: "2025-03-15",
-      matchScore: 85,
-      matchReason: "You both share interests in AI and startups, plus you're both early risers who enjoy a morning coffee chat!",
-      icebreaker: "Ask about their favorite AI application they've seen recently.",
-      photoUrl: "https://i.pravatar.cc/150?img=68",
-      feedbackGiven: true,
-      feedback: "positive"
-    },
-    {
-      id: "2",
-      name: "Riley Chen",
-      activityName: "Hiking Club Meetup",
-      matchDate: "2025-02-28",
-      matchScore: 78,
-      matchReason: "Both of you love outdoor activities and photography. Riley has also visited 3 of the same national parks as you!",
-      icebreaker: "What's your favorite hiking spot near the city?",
-      photoUrl: "https://i.pravatar.cc/150?img=35",
-      feedbackGiven: true,
-      feedback: "negative"
-    },
-    {
-      id: "3",
-      name: "Jordan Smith",
-      activityName: "Startup Weekend",
-      matchDate: "2025-02-10",
-      matchScore: 92,
-      matchReason: "You both have startup experience and complementary skills - your marketing background pairs well with Jordan's technical expertise.",
-      icebreaker: "What inspired you to join Startup Weekend?",
-      photoUrl: "https://i.pravatar.cc/150?img=12",
-      feedbackGiven: false,
+  const { user } = useAuth();
+  const [matches, setMatches] = useState<ProcessedMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [feedbackType, setFeedbackType] = useState<"positive" | "negative" | null>(null);
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMatchHistory = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        
+        // Get the matches
+        const { data: matchesData, error: matchesError } = await supabase
+          .from('match')
+          .select(`
+            id,
+            match_score,
+            match_reason,
+            icebreaker,
+            created_at,
+            round:round_id (
+              activity:activity_id (
+                title
+              )
+            ),
+            profile:profile_id_2 (
+              first_name,
+              last_name,
+              avatar_url
+            )
+          `)
+          .eq('profile_id_1', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (matchesError) throw matchesError;
+        
+        // Get the user's feedback on matches
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('match_feedback')
+          .select('match_id, is_positive')
+          .eq('profile_id', user.id);
+        
+        if (feedbackError) throw feedbackError;
+        
+        // Process the matches data with feedback information
+        const processedMatches: ProcessedMatch[] = [];
+        
+        if (matchesData) {
+          for (const match of matchesData) {
+            if (match.profile && match.round?.activity) {
+              // Find feedback for this match
+              const feedback = feedbackData?.find((f) => f.match_id === match.id);
+              
+              processedMatches.push({
+                id: match.id.toString(),
+                name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',
+                activityName: match.round.activity.title || 'Unnamed Activity',
+                matchDate: new Date(match.created_at).toISOString().split('T')[0],
+                matchScore: match.match_score,
+                matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
+                icebreaker: match.icebreaker || 'What brings you to this activity?',
+                photoUrl: match.profile.avatar_url,
+                feedbackGiven: !!feedback,
+                feedback: feedback ? (feedback.is_positive ? "positive" : "negative") : undefined,
+              });
+            }
+          }
+        }
+        
+        setMatches(processedMatches);
+      } catch (error) {
+        console.error("Error fetching match history:", error);
+        toast.error("Failed to load match history");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMatchHistory();
+  }, [user]);
+
+  const handlePositiveFeedback = async (matchId: string) => {
+    try {
+      if (!user) return;
+      
+      const { error } = await supabase
+        .from('match_feedback')
+        .insert({
+          match_id: parseInt(matchId),
+          profile_id: user.id,
+          is_positive: true,
+        });
+        
+      if (error) throw error;
+      
+      // Update the local state to reflect the feedback
+      setMatches(matches.map(match => 
+        match.id === matchId 
+          ? { ...match, feedbackGiven: true, feedback: "positive" } 
+          : match
+      ));
+      
+      toast.success("Positive feedback submitted!");
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast.error("Failed to submit feedback");
     }
-  ];
+  };
+
+  const handleNegativeFeedback = async (matchId: string, reason: string) => {
+    try {
+      if (!user) return;
+      
+      const { error } = await supabase
+        .from('match_feedback')
+        .insert({
+          match_id: parseInt(matchId),
+          profile_id: user.id,
+          is_positive: false,
+          reason
+        });
+        
+      if (error) throw error;
+      
+      // Update the local state to reflect the feedback
+      setMatches(matches.map(match => 
+        match.id === matchId 
+          ? { ...match, feedbackGiven: true, feedback: "negative" } 
+          : match
+      ));
+      
+      toast.success("Feedback submitted, thanks for helping us improve!");
+      
+      // Close the dialog
+      setCurrentMatchId(null);
+      setFeedbackType(null);
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast.error("Failed to submit feedback");
+    }
+  };
+
+  const handleOpenFeedback = (matchId: string, type: "positive" | "negative") => {
+    setCurrentMatchId(matchId);
+    setFeedbackType(type);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex flex-col md:flex-row justify-between">
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-4 w-60" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   if (matches.length === 0) {
     return (
@@ -63,7 +228,7 @@ const MatchHistory = () => {
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-shrink-0">
                   <img 
-                    src={match.photoUrl} 
+                    src={match.photoUrl || "https://i.pravatar.cc/150?img=32"} 
                     alt={match.name} 
                     className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
                   />
@@ -111,11 +276,42 @@ const MatchHistory = () => {
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <ThumbsDown size={16} />
-                      <span className="hidden md:inline">Not a fit</span>
-                    </Button>
-                    <Button size="sm" variant="default" className="gap-1">
+                    <Dialog open={feedbackType === "negative" && currentMatchId === match.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setFeedbackType(null);
+                        setCurrentMatchId(null);
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="gap-1"
+                          onClick={() => handleOpenFeedback(match.id, "negative")}
+                        >
+                          <ThumbsDown size={16} />
+                          <span className="hidden md:inline">Not a fit</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Feedback for match with {match.name}</DialogTitle>
+                          <DialogDescription>
+                            We're sorry this wasn't a good match. Please let us know why so we can improve.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <NegativeFeedbackForm 
+                          onSubmit={(reason) => handleNegativeFeedback(match.id, reason)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="default" 
+                      className="gap-1"
+                      onClick={() => handlePositiveFeedback(match.id)}
+                    >
                       <ThumbsUp size={16} />
                       <span className="hidden md:inline">Good match</span>
                     </Button>
@@ -127,6 +323,40 @@ const MatchHistory = () => {
         </Card>
       ))}
     </div>
+  );
+};
+
+interface NegativeFeedbackFormProps {
+  onSubmit: (reason: string) => void;
+}
+
+const NegativeFeedbackForm = ({ onSubmit }: NegativeFeedbackFormProps) => {
+  const [reason, setReason] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(reason);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="reason">What wasn't a good fit? (optional)</Label>
+        <Textarea 
+          id="reason" 
+          placeholder="e.g., Different interests, location too far, etc." 
+          value={reason} 
+          onChange={(e) => setReason(e.target.value)} 
+        />
+      </div>
+      
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="outline">Cancel</Button>
+        </DialogClose>
+        <Button type="submit">Submit Feedback</Button>
+      </DialogFooter>
+    </form>
   );
 };
 

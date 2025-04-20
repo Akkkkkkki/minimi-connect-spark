@@ -96,7 +96,18 @@ const MatchList = ({ activityId }: MatchListProps) => {
           .eq('profile_id_1', user.id);
 
         if (activityId && activityId !== 'all') {
-          query = query.eq('round.activity.id', parseInt(activityId));
+          // First get the round ids for the activity
+          const { data: rounds, error: roundsError } = await supabase
+            .from('match_round')
+            .select('id')
+            .eq('activity_id', parseInt(activityId));
+            
+          if (roundsError) throw roundsError;
+          
+          if (rounds && rounds.length > 0) {
+            const roundIds = rounds.map((r: any) => r.id);
+            query = query.in('round_id', roundIds);
+          }
         }
         
         const { data, error } = await query;
