@@ -20,12 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const profileSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  lastName: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   birthMonth: z.string().min(1, {
     message: "Please select your birth month.",
   }),
