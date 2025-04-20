@@ -14,12 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Define interface for user activity
 interface UserActivity {
-  id: string;
-  name: string;
-  startTime: string;
-  endTime: string | null;
+  id: number;
+  title: string;
+  start_time: string;
+  end_time: string | null;
 }
 
 const MatchResults = () => {
@@ -27,11 +26,9 @@ const MatchResults = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedActivity, setSelectedActivity] = useState<string>("all");
   const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
-  const [currentActivities, setCurrentActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Redirect if not authenticated
     if (!isLoading && !isAuthenticated) {
       toast.error("Please sign in to view your recommendations", {
         description: "You'll be redirected to the login page"
@@ -49,48 +46,41 @@ const MatchResults = () => {
         
         const now = new Date().toISOString();
         
-        // Fetch user's joined activities
-        const { data: activities, error } = await supabase
-          .from('activity_participants')
+        const { data: participations, error: participationsError } = await supabase
+          .from('activity_participant')
           .select(`
-            activity_id,
-            activities (
-              id, 
-              title, 
+            activity:activity (
+              id,
+              title,
               start_time,
               end_time
             )
           `)
           .eq('profile_id', user.id);
           
-        if (error) throw error;
+        if (participationsError) throw participationsError;
         
-        const processedActivities = activities
-          .filter(item => item.activities) // Filter out any null activities
-          .map(item => ({
-            id: item.activities.id,
-            name: item.activities.title,
-            startTime: item.activities.start_time,
-            endTime: item.activities.end_time || null
-          }));
-        
-        setUserActivities(processedActivities);
+        // Transform and filter out any null activities
+        const activities: UserActivity[] = participations
+          .map(p => p.activity)
+          .filter((a): a is UserActivity => a !== null);
         
         // Find current/ongoing activities
-        const ongoing = processedActivities.filter(activity => {
-          const isStarted = activity.startTime <= now;
-          const isNotEnded = !activity.endTime || activity.endTime > now;
+        const ongoingActivities = activities.filter(activity => {
+          const isStarted = new Date(activity.start_time) <= new Date(now);
+          const isNotEnded = !activity.end_time || new Date(activity.end_time) > new Date(now);
           return isStarted && isNotEnded;
         });
         
-        setCurrentActivities(ongoing);
+        setUserActivities(activities);
         
-        // If there are ongoing activities, set the first one as default selection
-        if (ongoing.length > 0) {
-          setSelectedActivity(ongoing[0].id);
+        // Set first ongoing activity as default selection
+        if (ongoingActivities.length > 0) {
+          setSelectedActivity(ongoingActivities[0].id.toString());
         }
       } catch (error) {
         console.error("Error fetching activities:", error);
+        toast.error("Failed to load your activities");
       } finally {
         setLoading(false);
       }
@@ -129,8 +119,8 @@ const MatchResults = () => {
             <SelectContent>
               <SelectItem value="all">All Activities</SelectItem>
               {userActivities.map(activity => (
-                <SelectItem key={activity.id} value={activity.id}>
-                  {activity.name}
+                <SelectItem key={activity.id} value={activity.id.toString()}>
+                  {activity.title}
                 </SelectItem>
               ))}
             </SelectContent>
