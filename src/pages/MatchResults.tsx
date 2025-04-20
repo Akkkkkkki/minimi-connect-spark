@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Updated interface to match the actual structure from Supabase
+// Define the activity structure returned from Supabase
 interface UserActivity {
   id: number;
   title: string;
@@ -22,7 +22,8 @@ interface UserActivity {
   end_time: string | null;
 }
 
-interface ActivityParticipation {
+// Define the structure of each participation item
+interface ParticipationItem {
   activity: UserActivity;
 }
 
@@ -54,7 +55,7 @@ const MatchResults = () => {
         const { data: participations, error: participationsError } = await supabase
           .from('activity_participant')
           .select(`
-            activity:activity (
+            activity:activity_id (
               id,
               title,
               start_time,
@@ -65,10 +66,19 @@ const MatchResults = () => {
           
         if (participationsError) throw participationsError;
         
-        // Transform the data structure to extract activities
-        const activities: UserActivity[] = participations
-          .map((p: ActivityParticipation) => p.activity)
-          .filter((a): a is UserActivity => a !== null);
+        if (!participations) {
+          setUserActivities([]);
+          return;
+        }
+        
+        // Cast and transform the data to extract activities
+        const activities: UserActivity[] = [];
+        
+        participations.forEach((p: any) => {
+          if (p.activity && !Array.isArray(p.activity)) {
+            activities.push(p.activity as UserActivity);
+          }
+        });
         
         // Find current/ongoing activities
         const ongoingActivities = activities.filter(activity => {
