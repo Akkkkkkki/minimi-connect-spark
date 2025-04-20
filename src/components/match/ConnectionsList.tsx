@@ -14,6 +14,21 @@ interface MatchesListProps {
   activityId: string;
 }
 
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+interface MatchData {
+  id: number;
+  match_score: number;
+  match_reason: string | null;
+  icebreaker: string | null;
+  profile: Profile;
+  match_feedback: any[];
+}
+
 interface Match {
   id: string;
   name: string;

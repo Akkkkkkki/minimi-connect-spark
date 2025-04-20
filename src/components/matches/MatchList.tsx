@@ -24,23 +24,27 @@ interface MatchListProps {
   activityId?: string;
 }
 
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+interface ActivityData {
+  title: string;
+  id: string | number;
+}
+
 interface MatchData {
-  id: string;
+  id: number;
   match_score: number;
   match_reason: string | null;
   icebreaker: string | null;
   created_at: string;
   round: {
-    activity: {
-      title: string;
-      id: string;
-    }
+    activity: ActivityData;
   };
-  profile: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  };
+  profile: Profile;
 }
 
 interface ProcessedMatch {
