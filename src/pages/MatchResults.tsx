@@ -22,11 +22,6 @@ interface UserActivity {
   end_time: string | null;
 }
 
-// Define the structure of each participation item
-interface ParticipationItem {
-  activity: UserActivity;
-}
-
 const MatchResults = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -52,7 +47,8 @@ const MatchResults = () => {
         
         const now = new Date().toISOString();
         
-        const { data: participations, error: participationsError } = await supabase
+        // Query activity_participant table to get activities the user participates in
+        const { data, error } = await supabase
           .from('activity_participant')
           .select(`
             activity:activity_id (
@@ -63,20 +59,19 @@ const MatchResults = () => {
             )
           `)
           .eq('profile_id', user.id);
-          
-        if (participationsError) throw participationsError;
         
-        if (!participations) {
+        if (error) throw error;
+        
+        if (!data) {
           setUserActivities([]);
           return;
         }
         
-        // Cast and transform the data to extract activities
+        // Extract activities from the response
         const activities: UserActivity[] = [];
-        
-        participations.forEach((p: any) => {
-          if (p.activity && !Array.isArray(p.activity)) {
-            activities.push(p.activity as UserActivity);
+        data.forEach((item: any) => {
+          if (item.activity && typeof item.activity === 'object') {
+            activities.push(item.activity as UserActivity);
           }
         });
         

@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/components/ui/sonner";
 
 interface MatchesListProps {
   activityId: string;
@@ -22,51 +25,83 @@ interface Match {
 }
 
 const MatchesList = ({ activityId }: MatchesListProps) => {
+  const { user } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching matches
     const fetchMatches = async () => {
-      setLoading(true);
+      if (!user) return;
       
-      // Mock data
-      const mockMatches: Match[] = [
-        {
-          id: "c1",
-          name: "Alex Thompson",
-          matchReason: "You both share interests in technology, startups, and hiking.",
-          matchScore: 85,
-          conversationStarter: "Alex mentioned they just launched a new app. Ask them about their experience with the development process!",
-          hasResponded: true
-        },
-        {
-          id: "c2",
-          name: "Jordan Lee",
-          matchReason: "You both work in similar industries and enjoy outdoor activities.",
-          matchScore: 72,
-          conversationStarter: "Jordan recently moved from New York. Ask them how they're finding the change!",
-          hasResponded: false
-        },
-        {
-          id: "c3",
-          name: "Sam Rivera",
-          matchReason: "You both are interested in AI and machine learning technologies.",
-          matchScore: 90,
-          conversationStarter: "Sam just finished a project using neural networks. Ask them about the challenges they faced!",
-          hasResponded: true
+      try {
+        setLoading(true);
+        
+        let query = supabase
+          .from('match')
+          .select(`
+            id,
+            match_score,
+            match_reason,
+            icebreaker,
+            profile:profile_id_2 (
+              first_name,
+              last_name,
+              avatar_url
+            ),
+            match_feedback (
+              id
+            )
+          `)
+          .eq('profile_id_1', user.id);
+          
+        if (activityId && activityId !== 'all') {
+          // First get the round ids for the activity
+          const { data: rounds, error: roundsError } = await supabase
+            .from('match_round')
+            .select('id')
+            .eq('activity_id', parseInt(activityId));
+            
+          if (roundsError) throw roundsError;
+          
+          if (rounds && rounds.length > 0) {
+            const roundIds = rounds.map((r: any) => r.id);
+            query = query.in('round_id', roundIds);
+          }
         }
-      ];
-      
-      // Simulate network delay
-      setTimeout(() => {
-        setMatches(mockMatches);
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        const processedMatches: Match[] = [];
+        
+        if (data) {
+          for (const match of data) {
+            if (match.profile) {
+              processedMatches.push({
+                id: match.id.toString(),
+                name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',
+                avatar: match.profile.avatar_url || undefined,
+                matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
+                matchScore: match.match_score,
+                conversationStarter: match.icebreaker || 'What brings you to this activity?',
+                hasResponded: match.match_feedback && match.match_feedback.length > 0
+              });
+            }
+          }
+        }
+        
+        setMatches(processedMatches);
+      } catch (error) {
+        console.error("Error fetching matches:", error);
+        toast.error("Failed to load connections");
+      } finally {
         setLoading(false);
-      }, 600);
+      }
     };
     
     fetchMatches();
-  }, [activityId]);
+  }, [user, activityId]);
 
   if (loading) {
     return (
