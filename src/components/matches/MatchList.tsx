@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,15 +34,17 @@ interface ActivityData {
   id: string | number;
 }
 
+interface RoundData {
+  activity: ActivityData;
+}
+
 interface MatchData {
   id: number;
   match_score: number;
   match_reason: string | null;
   icebreaker: string | null;
   created_at: string;
-  round: {
-    activity: ActivityData;
-  };
+  round: RoundData;
   profile: Profile;
 }
 
@@ -121,8 +122,9 @@ const MatchList = ({ activityId }: MatchListProps) => {
         const processedMatches: ProcessedMatch[] = [];
         
         if (data) {
-          for (const match of data) {
-            if (match.profile && match.round?.activity) {
+          for (const match of data as any[]) {
+            // Ensure that the structure matches our expected shapes
+            if (match && match.profile && match.round && match.round.activity) {
               processedMatches.push({
                 id: match.id.toString(),
                 name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',

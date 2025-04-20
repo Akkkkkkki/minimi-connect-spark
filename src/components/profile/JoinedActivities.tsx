@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,11 @@ interface Activity {
   activity_type: string;
 }
 
-const JoinedActivities = () => {
+interface JoinedActivitiesProps {
+  onSelectActivity?: (id: string) => void;
+}
+
+const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +105,11 @@ const JoinedActivities = () => {
   return (
     <div className="space-y-4">
       {activities.map((activity) => (
-        <Card key={activity.id}>
+        <Card 
+          key={activity.id} 
+          className={onSelectActivity ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
+          onClick={onSelectActivity ? () => onSelectActivity(activity.id.toString()) : undefined}
+        >
           <CardContent className="p-4">
             <div className="space-y-2">
               <div className="flex justify-between items-start">

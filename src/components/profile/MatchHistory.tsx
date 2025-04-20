@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,31 @@ interface ProcessedMatch {
   photoUrl: string | null;
   feedbackGiven: boolean;
   feedback?: "positive" | "negative";
+}
+
+// Define correct types for the API response
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+interface ActivityData {
+  title: string;
+}
+
+interface RoundData {
+  activity: ActivityData;
+}
+
+interface MatchData {
+  id: number;
+  match_score: number;
+  match_reason: string | null;
+  icebreaker: string | null;
+  created_at: string;
+  round: RoundData;
+  profile: Profile;
 }
 
 const MatchHistory = () => {
@@ -84,8 +108,9 @@ const MatchHistory = () => {
         const processedMatches: ProcessedMatch[] = [];
         
         if (matchesData) {
-          for (const match of matchesData) {
-            if (match.profile && match.round?.activity) {
+          for (const match of matchesData as any[]) {
+            // Ensure the structure matches our expected types
+            if (match && match.profile && match.round && match.round.activity) {
               // Find feedback for this match
               const feedback = feedbackData?.find((f) => f.match_id === match.id);
               
