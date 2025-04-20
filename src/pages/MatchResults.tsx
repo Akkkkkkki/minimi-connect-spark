@@ -14,11 +14,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Updated interface to match the actual structure from Supabase
 interface UserActivity {
   id: number;
   title: string;
   start_time: string;
   end_time: string | null;
+}
+
+interface ActivityParticipation {
+  activity: UserActivity;
 }
 
 const MatchResults = () => {
@@ -60,9 +65,9 @@ const MatchResults = () => {
           
         if (participationsError) throw participationsError;
         
-        // Transform and filter out any null activities
+        // Transform the data structure to extract activities
         const activities: UserActivity[] = participations
-          .map(p => p.activity)
+          .map((p: ActivityParticipation) => p.activity)
           .filter((a): a is UserActivity => a !== null);
         
         // Find current/ongoing activities
