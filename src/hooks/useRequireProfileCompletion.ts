@@ -25,18 +25,40 @@ export function useRequireProfileCompletion() {
 
   useEffect(() => {
     const check = async () => {
-      if (!user || isLoading) return;
-      const { data, error } = await supabase
-        .from("profile")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!data || !isProfileComplete(data)) {
-        navigate("/onboarding");
+      // If auth is still loading, wait
+      if (isLoading) return;
+      
+      // If user is not logged in, we don't need to check profile
+      // Mark as checked and let auth redirects handle this case
+      if (!user) {
+        setProfileChecked(true);
+        return;
       }
-      setProfileChecked(true);
+
+      try {
+        const { data, error } = await supabase
+          .from("profile")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error checking profile:", error);
+          setProfileChecked(true); // Continue anyway to avoid being stuck
+          return;
+        }
+
+        if (!data || !isProfileComplete(data)) {
+          navigate("/onboarding");
+        }
+        
+        setProfileChecked(true);
+      } catch (err) {
+        console.error("Unexpected error while checking profile:", err);
+        setProfileChecked(true); // Continue anyway to avoid being stuck
+      }
     };
+
     check();
   }, [user, isLoading, navigate]);
 

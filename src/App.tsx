@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,12 +20,15 @@ import QuestionnaireBuilderPage from "./pages/QuestionnaireBuilderPage";
 import ParticipantQuestionnairePage from "./pages/ParticipantQuestionnairePage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import { useRequireProfileCompletion } from "@/hooks/useRequireProfileCompletion";
+import { Suspense } from "react";
 
 function RequireProfileCompletion({ children }: { children: React.ReactNode }) {
   const { profileChecked } = useRequireProfileCompletion();
+  
   if (!profileChecked) {
     return <div className="flex items-center justify-center min-h-screen">Checking profile…</div>;
   }
+  
   return <>{children}</>;
 }
 
@@ -33,33 +37,73 @@ function App() {
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <AuthProvider>
         <Router>
-          <Routes>
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route
-              path="*"
-              element={
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <Routes>
+              {/* Public routes and onboarding that don't require profile check */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              
+              {/* Protected routes that require profile check */}
+              <Route path="/" element={
                 <RequireProfileCompletion>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/activities" element={<ActivitiesPage />} />
-                    <Route path="/activities/:activityId" element={<ActivityDetailsPage />} />
-                    <Route path="/activities/:activityId/questionnaire" element={<ParticipantQuestionnairePage />} />
-                    <Route path="/profile" element={<ProfileDashboard />} />
-                    <Route path="/my-activities" element={<MyActivitiesPage />} />
-                    <Route path="/create-activity" element={<CreateActivity />} />
-                    <Route path="/activity-management" element={<ActivityManagement />} />
-                    <Route path="/activity-management/:activityId/questionnaire" element={<QuestionnaireBuilderPage />} />
-                    <Route path="/matches" element={<MatchResults />} />
-                    <Route path="/match-history" element={<MatchHistoryPage />} />
-                    <Route path="/how-it-works" element={<HowItWorksPage />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <Index />
                 </RequireProfileCompletion>
-              }
-            />
-          </Routes>
+              } />
+              <Route path="/activities" element={
+                <RequireProfileCompletion>
+                  <ActivitiesPage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/activities/:activityId" element={
+                <RequireProfileCompletion>
+                  <ActivityDetailsPage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/activities/:activityId/questionnaire" element={
+                <RequireProfileCompletion>
+                  <ParticipantQuestionnairePage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/profile" element={
+                <RequireProfileCompletion>
+                  <ProfileDashboard />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/my-activities" element={
+                <RequireProfileCompletion>
+                  <MyActivitiesPage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/create-activity" element={
+                <RequireProfileCompletion>
+                  <CreateActivity />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/activity-management" element={
+                <RequireProfileCompletion>
+                  <ActivityManagement />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/activity-management/:activityId/questionnaire" element={
+                <RequireProfileCompletion>
+                  <QuestionnaireBuilderPage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/matches" element={
+                <RequireProfileCompletion>
+                  <MatchResults />
+                </RequireProfileCompletion>
+              } />
+              <Route path="/match-history" element={
+                <RequireProfileCompletion>
+                  <MatchHistoryPage />
+                </RequireProfileCompletion>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </Router>
         <Toaster />
       </AuthProvider>
