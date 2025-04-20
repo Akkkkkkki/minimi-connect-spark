@@ -92,10 +92,13 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
         if (data) {
           for (const match of data) {
             if (match.profile) {
+              // Get the profile object from array if needed
+              const profile = Array.isArray(match.profile) ? match.profile[0] : match.profile;
+              
               processedMatches.push({
                 id: match.id.toString(),
-                name: `${match.profile.first_name || ''} ${match.profile.last_name || ''}`.trim() || 'Unnamed User',
-                avatar: match.profile.avatar_url || undefined,
+                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
+                avatar: profile.avatar_url || undefined,
                 matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
                 matchScore: match.match_score,
                 conversationStarter: match.icebreaker || 'What brings you to this activity?',
