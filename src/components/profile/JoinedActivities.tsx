@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ interface Activity {
   start_time: string;
   end_time: string | null;
   activity_type: string;
+  tags: string[];
 }
 
 interface JoinedActivitiesProps {
@@ -33,36 +35,29 @@ const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
         setLoading(true);
         
         // Query the activity_participant table to get activities the user has joined
-        const { data, error } = await supabase
+        const { data: participantData, error: participantError } = await supabase
           .from('activity_participant')
-          .select(`
-            activity:activity_id (
-              id,
-              title,
-              location,
-              start_time,
-              end_time,
-              activity_type
-            )
-          `)
+          .select('activity_id')
           .eq('profile_id', user.id);
         
-        if (error) throw error;
+        if (participantError) throw participantError;
         
-        // Extract unique activities
-        const uniqueActivities = data ? data.reduce((acc: Activity[], item: any) => {
-          if (item.activity && !acc.some((a) => a.id === item.activity.id)) {
-            acc.push(item.activity as Activity);
-          }
-          return acc;
-        }, []) : [];
-        
-        // Sort by start time (most recent first)
-        uniqueActivities.sort((a, b) => 
-          new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-        );
-        
-        setActivities(uniqueActivities);
+        if (participantData && participantData.length > 0) {
+          const activityIds = participantData.map(p => p.activity_id);
+          
+          // Get the activities based on the IDs
+          const { data: activitiesData, error: activitiesError } = await supabase
+            .from('activity')
+            .select('*')
+            .in('id', activityIds)
+            .order('start_time', { ascending: false });
+            
+          if (activitiesError) throw activitiesError;
+          
+          setActivities(activitiesData || []);
+        } else {
+          setActivities([]);
+        }
       } catch (error) {
         console.error("Error fetching joined activities:", error);
         toast.error("Failed to load your activities");
@@ -128,6 +123,14 @@ const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
                   <span>{new Date(activity.start_time).toLocaleDateString()}</span>
                 </div>
               </div>
+              
+              {activity.tags && activity.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {activity.tags.slice(0, 5).map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

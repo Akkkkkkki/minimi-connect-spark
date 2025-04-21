@@ -26,8 +26,8 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
         setLoading(true);
         
         // Get activity details
-        const { data, error } = await supabase
-          .from('activities')
+        const { data: activityData, error: activityError } = await supabase
+          .from('activity')
           .select(`
             *,
             questionnaires (id)
@@ -35,13 +35,22 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
           .eq('id', activityId)
           .single();
           
-        if (error) throw error;
+        if (activityError) throw activityError;
         
-        if (data) {
+        if (activityData) {
+          // Check if current user is a participant
+          const { data: participantData } = await supabase
+            .from('activity_participant')
+            .select('id, status, answers')
+            .eq('activity_id', activityId)
+            .maybeSingle();
+          
           const formattedActivity = {
-            ...data,
-            status: new Date(data.start_time) > new Date() ? "upcoming" : "completed",
-            hasQuestionnaire: data.questionnaires && data.questionnaires.length > 0
+            ...activityData,
+            status: new Date(activityData.start_time) > new Date() ? "upcoming" : "completed",
+            hasQuestionnaire: activityData.questionnaires && activityData.questionnaires.length > 0,
+            hasCompletedQuestionnaire: participantData && Object.keys(participantData.answers || {}).length > 0,
+            isParticipant: !!participantData
           };
           
           setActivity(formattedActivity);
@@ -58,7 +67,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
   }, [activityId]);
 
   const handleGoBack = () => {
-    navigate('/my-activities');
+    navigate(-1);
   };
   
   const handleCompleteQuestionnaire = () => {
@@ -91,7 +100,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
         <CardContent className="py-10 text-center">
           <p className="text-muted-foreground">Activity not found</p>
           <Button onClick={handleGoBack} className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Activities
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
         </CardContent>
       </Card>
@@ -122,7 +131,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
         <p className="text-gray-600">{activity.description}</p>
         
         <div className="flex flex-wrap gap-2 pt-2">
-          {tags.map((tag: string, index: number) => (
+          {tags.slice(0, 5).map((tag: string, index: number) => (
             <Badge key={index} variant="secondary">
               <Tag className="h-3 w-3 mr-1" /> {tag}
             </Badge>
@@ -146,7 +155,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
           </div>
           
           <div className="flex items-center justify-end">
-            {activity.status === "upcoming" && (
+            {activity.status === "upcoming" && activity.hasQuestionnaire && (
               <Button onClick={handleCompleteQuestionnaire}>
                 {activity.hasCompletedQuestionnaire ? "Edit Answers" : "Complete Questionnaire"}
               </Button>

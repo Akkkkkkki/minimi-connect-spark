@@ -51,6 +51,48 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_feedback: {
+        Row: {
+          activity_id: number
+          comment: string | null
+          created_at: string
+          id: number
+          profile_id: string
+          rating: number
+        }
+        Insert: {
+          activity_id: number
+          comment?: string | null
+          created_at?: string
+          id?: never
+          profile_id: string
+          rating: number
+        }
+        Update: {
+          activity_id?: number
+          comment?: string | null
+          created_at?: string
+          id?: never
+          profile_id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_feedback_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_feedback_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_participant: {
         Row: {
           activity_id: number
@@ -85,6 +127,75 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_tag: {
+        Row: {
+          activity_id: number
+          tag_id: number
+        }
+        Insert: {
+          activity_id: number
+          tag_id: number
+        }
+        Update: {
+          activity_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_tag_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_tag_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_message: {
+        Row: {
+          body: string
+          created_at: string
+          id: number
+          match_id: number
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: never
+          match_id: number
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: never
+          match_id?: number
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
             referencedColumns: ["id"]
           },
         ]
@@ -282,6 +393,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      questionnaire_response: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: number
+          participant_id: number
+          questionnaire_id: number
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          id?: never
+          participant_id: number
+          questionnaire_id: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: never
+          participant_id?: number
+          questionnaire_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_response_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "activity_participant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_response_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tag: {
+        Row: {
+          id: number
+          name: string
+        }
+        Insert: {
+          id?: never
+          name: string
+        }
+        Update: {
+          id?: never
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

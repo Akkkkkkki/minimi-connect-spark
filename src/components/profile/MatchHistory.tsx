@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface ProcessedMatch {
   id: string;
   name: string;
   activityName: string;
+  activityId: string;
   matchDate: string;
   matchScore: number;
   matchReason: string;
@@ -30,31 +32,7 @@ interface ProcessedMatch {
   photoUrl: string | null;
   feedbackGiven: boolean;
   feedback?: "positive" | "negative";
-}
-
-// Define correct types for the API response
-interface Profile {
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-}
-
-interface ActivityData {
-  title: string;
-}
-
-interface RoundData {
-  activity: ActivityData;
-}
-
-interface MatchData {
-  id: number;
-  match_score: number;
-  match_reason: string | null;
-  icebreaker: string | null;
-  created_at: string;
-  round: RoundData;
-  profile: Profile;
+  mutualMatch: boolean;
 }
 
 const MatchHistory = () => {
@@ -71,7 +49,7 @@ const MatchHistory = () => {
       try {
         setLoading(true);
         
-        // Get the matches
+        // Get all matches where user is either profile_id_1 or profile_id_2
         const { data: matchesData, error: matchesError } = await supabase
           .from('match')
           .select(`
@@ -80,141 +58,110 @@ const MatchHistory = () => {
             match_reason,
             icebreaker,
             created_at,
-            round_id,
-            profile_id_2
+            profile_id_1,
+            profile_id_2,
+            round_id
           `)
-          .eq('profile_id_1', user.id)
+          .or(`profile_id_1.eq.${user.id},profile_id_2.eq.${user.id}`)
           .order('created_at', { ascending: false });
         
         if (matchesError) throw matchesError;
         
-        // Get the user's feedback on matches
+        if (!matchesData || matchesData.length === 0) {
+          setMatches([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Get all feedback for these matches
         const { data: feedbackData, error: feedbackError } = await supabase
           .from('match_feedback')
-          .select('match_id, is_positive')
-          .eq('profile_id', user.id);
+          .select('match_id, profile_id, is_positive')
+          .in('match_id', matchesData.map(m => m.id));
         
         if (feedbackError) throw feedbackError;
         
-        // Fetch profiles and round/activity data separately
-        const profileIds = matchesData?.map(match => match.profile_id_2) || [];
-        const roundIds = matchesData?.map(match => match.round_id).filter(Boolean) || [];
+        // Extract all other user IDs to fetch their profiles
+        const otherUserIds = matchesData.map(match => 
+          match.profile_id_1 === user.id ? match.profile_id_2 : match.profile_id_1
+        );
         
-        let profileData = {};
-        let roundActivityData = {};
+        // Fetch all relevant profiles in one go
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profile')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', otherUserIds);
+          
+        if (profilesError) throw profilesError;
         
-        // Fetch profiles
-        if (profileIds.length > 0) {
-          const { data: profiles, error: profileError } = await supabase
-            .from('profile')
-            .select('id, first_name, last_name, avatar_url')
-            .in('id', profileIds);
-            
-          if (profileError) {
-            console.error("Error fetching profiles:", profileError);
-          } else if (profiles) {
-            profileData = profiles.reduce((acc, profile) => {
-              acc[profile.id] = profile;
-              return acc;
-            }, {});
-          }
+        // Create a map for easy profile lookup
+        const profileMap = new Map();
+        if (profilesData) {
+          profilesData.forEach(profile => profileMap.set(profile.id, profile));
         }
         
-        // Fetch round and activity data
-        if (roundIds.length > 0) {
-          const { data: rounds, error: roundError } = await supabase
+        // Get all rounds info for activity context
+        const roundIds = [...new Set(matchesData.map(match => match.round_id))];
+        const activityData = new Map();
+        
+        for (const roundId of roundIds) {
+          const { data: roundData } = await supabase
             .from('match_round')
             .select(`
               id, 
-              activity_id
+              activity:activity_id (id, title)
             `)
-            .in('id', roundIds);
+            .eq('id', roundId)
+            .single();
             
-          if (roundError) {
-            console.error("Error fetching rounds:", roundError);
-          } else if (rounds && rounds.length > 0) {
-            // Get activity ids from rounds
-            const activityIds = rounds.map(round => round.activity_id).filter(Boolean);
-            
-            // Create a map of round IDs to activity IDs
-            const roundToActivityMap = rounds.reduce((acc, round) => {
-              acc[round.id] = round.activity_id;
-              return acc;
-            }, {});
-            
-            // Fetch activities
-            if (activityIds.length > 0) {
-              const { data: activities, error: activityError } = await supabase
-                .from('activity')
-                .select('id, title')
-                .in('id', activityIds);
-                
-              if (activityError) {
-                console.error("Error fetching activities:", activityError);
-              } else if (activities) {
-                // Create a map of activity IDs to activity data
-                const activityMap = activities.reduce((acc, activity) => {
-                  acc[activity.id] = activity;
-                  return acc;
-                }, {});
-                
-                // Associate rounds with their activities
-                roundActivityData = roundIds.reduce((acc, roundId) => {
-                  const activityId = roundToActivityMap[roundId];
-                  acc[roundId] = activityMap[activityId] || null;
-                  return acc;
-                }, {});
-              }
-            }
+          if (roundData && roundData.activity) {
+            activityData.set(roundId, roundData.activity);
           }
         }
         
-        // Process the matches data with feedback information
-        const processedMatches: ProcessedMatch[] = [];
-        
-        if (matchesData) {
-          for (const match of matchesData) {
-            const profile = profileData[match.profile_id_2];
-            const activity = roundActivityData[match.round_id];
-            
-            // Find feedback for this match
-            const feedback = feedbackData?.find((f) => f.match_id === match.id);
-            
-            if (profile && activity) {
-              processedMatches.push({
-                id: match.id.toString(),
-                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
-                activityName: activity.title || 'Unnamed Activity',
-                matchDate: new Date(match.created_at).toISOString().split('T')[0],
-                matchScore: match.match_score,
-                matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
-                icebreaker: match.icebreaker || 'What brings you to this activity?',
-                photoUrl: profile.avatar_url,
-                feedbackGiven: !!feedback,
-                feedback: feedback ? (feedback.is_positive ? "positive" : "negative") : undefined,
-              });
-            }
-          }
-        }
-        
-        setMatches(processedMatches);
-      } catch (error) {
-        // Log detailed error information for debugging
-        console.error("MatchHistory Error:", {
-          error,
-          user: user?.id,
-          // Log the query info for debugging
-          query: `match table with profile_id_1=${user?.id} ordered by created_at DESC`
+        // Process matches to determine which ones to show (confirmed/mutual matches)
+        const processedMatches = matchesData.map(match => {
+          const otherUserId = match.profile_id_1 === user.id ? match.profile_id_2 : match.profile_id_1;
+          const otherUserProfile = profileMap.get(otherUserId);
+          const activityInfo = activityData.get(match.round_id);
+          
+          // Find feedback from both users
+          const myFeedback = feedbackData?.find(f => 
+            f.match_id === match.id && f.profile_id === user.id
+          );
+          
+          const otherUserFeedback = feedbackData?.find(f => 
+            f.match_id === match.id && f.profile_id === otherUserId
+          );
+          
+          // Determine if this is a mutual match (both gave positive feedback)
+          const mutualMatch = myFeedback?.is_positive && otherUserFeedback?.is_positive;
+          
+          return {
+            id: match.id.toString(),
+            name: otherUserProfile ? 
+              `${otherUserProfile.first_name || ''} ${otherUserProfile.last_name || ''}`.trim() || 'Unnamed User' : 
+              'Unknown User',
+            activityName: activityInfo?.title || 'Unknown Activity',
+            activityId: activityInfo?.id.toString() || '',
+            matchDate: new Date(match.created_at).toISOString().split('T')[0],
+            matchScore: Math.round(Number(match.match_score) * 100), // Convert score to percentage
+            matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
+            icebreaker: match.icebreaker || 'What brings you to this activity?',
+            photoUrl: otherUserProfile?.avatar_url || null,
+            feedbackGiven: !!myFeedback,
+            feedback: myFeedback ? (myFeedback.is_positive ? "positive" : "negative") : undefined,
+            mutualMatch: !!mutualMatch
+          };
         });
         
-        // Add informative error for the user
-        if (error.code === "PGRST116") {
-          toast.error("Permission denied: You don't have access to this data");
-        } else if (error.code === "42P01") {
-          toast.error("Table not found: Database configuration issue");
-        } else {
-          toast.error(`Failed to load match history: ${error.message || "Unknown error"}`);
-        }
+        // Filter to show only mutual matches
+        const confirmedMatches = processedMatches.filter(match => match.mutualMatch);
+        
+        setMatches(confirmedMatches);
+      } catch (error) {
+        console.error("MatchHistory Error:", error);
+        toast.error("Failed to load match history");
       } finally {
         setLoading(false);
       }
@@ -318,8 +265,8 @@ const MatchHistory = () => {
     return (
       <Card>
         <CardContent className="pt-6 text-center py-12">
-          <p className="text-muted-foreground">You don't have any matches yet.</p>
-          <p className="mt-2">Join some activities to start matching with others!</p>
+          <p className="text-muted-foreground">You don't have any confirmed matches yet.</p>
+          <p className="mt-2">When both you and another participant express interest in each other, you'll see them here!</p>
         </CardContent>
       </Card>
     );

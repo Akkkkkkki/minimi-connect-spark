@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,10 @@ interface ProcessedMatch {
   matchReason: string;
   icebreaker: string;
   photoUrl: string | null;
+  hasGivenFeedback: boolean;
+  hasPositiveFeedback: boolean;
+  otherUserFeedback: 'positive' | 'negative' | 'none';
+  shouldShow: boolean;
 }
 
 const MatchList = ({ activityId }: MatchListProps) => {
@@ -74,21 +79,10 @@ const MatchList = ({ activityId }: MatchListProps) => {
       try {
         setLoading(true);
         
-        let query = supabase
-          .from('match')
-          .select(`
-            id,
-            match_score,
-            match_reason,
-            icebreaker,
-            created_at,
-            round_id,
-            profile_id_2
-          `)
-          .eq('profile_id_1', user.id);
-
+        // Get rounds for the activity if specified
+        let roundIds: number[] = [];
+        
         if (activityId && activityId !== 'all') {
-          // First get the round ids for the activity
           const { data: rounds, error: roundsError } = await supabase
             .from('match_round')
             .select('id')
@@ -97,135 +91,137 @@ const MatchList = ({ activityId }: MatchListProps) => {
           if (roundsError) throw roundsError;
           
           if (rounds && rounds.length > 0) {
-            const roundIds = rounds.map((r: any) => r.id);
-            query = query.in('round_id', roundIds);
+            roundIds = rounds.map((r: any) => r.id);
           }
         }
         
-        const { data, error } = await query;
+        // Query for matches
+        let matchesQuery = supabase
+          .from('match')
+          .select(`
+            id,
+            match_score,
+            match_reason,
+            icebreaker,
+            created_at,
+            round_id,
+            profile_id_1,
+            profile_id_2
+          `)
+          .or(`profile_id_1.eq.${user.id},profile_id_2.eq.${user.id}`);
+
+        if (roundIds.length > 0) {
+          matchesQuery = matchesQuery.in('round_id', roundIds);
+        }
+          
+        const { data: matchesData, error: matchesError } = await matchesQuery;
         
-        if (error) {
-          console.error('Error fetching matches:', error);
-          throw error;
+        if (matchesError) throw matchesError;
+        
+        if (!matchesData || matchesData.length === 0) {
+          setMatches([]);
+          setLoading(false);
+          return;
         }
         
-        // Fetch profiles and round/activity data separately to avoid RLS issues
-        const profileIds = data?.map(match => match.profile_id_2) || [];
-        const roundIds = data?.map(match => match.round_id).filter(Boolean) || [];
+        // Fetch all feedback data
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('match_feedback')
+          .select('match_id, profile_id, is_positive')
+          .in('match_id', matchesData.map(m => m.id));
+          
+        if (feedbackError) throw feedbackError;
         
-        let profileData = {};
-        let roundActivityData = {};
+        // Get all profile IDs to fetch
+        const profileIds = new Set<string>();
+        matchesData.forEach(match => {
+          if (match.profile_id_1 !== user.id) profileIds.add(match.profile_id_1);
+          if (match.profile_id_2 !== user.id) profileIds.add(match.profile_id_2);
+        });
         
         // Fetch profiles
-        if (profileIds.length > 0) {
-          const { data: profiles, error: profileError } = await supabase
-            .from('profile')
-            .select('id, first_name, last_name, avatar_url')
-            .in('id', profileIds);
-            
-          if (profileError) {
-            console.error("Error fetching profiles:", profileError);
-          } else if (profiles) {
-            profileData = profiles.reduce((acc, profile) => {
-              acc[profile.id] = profile;
-              return acc;
-            }, {});
-          }
-        }
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profile')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', Array.from(profileIds));
+          
+        if (profilesError) throw profilesError;
         
-        // Fetch round and activity data
-        if (roundIds.length > 0) {
-          const { data: rounds, error: roundError } = await supabase
+        // Get activity information from rounds
+        const roundToActivityMap = new Map<number, { id: number, title: string }>();
+        for (const roundId of new Set(matchesData.map(m => m.round_id))) {
+          const { data: round } = await supabase
             .from('match_round')
-            .select(`
-              id, 
-              activity_id
-            `)
-            .in('id', roundIds);
+            .select('activity_id, name, activity:activity_id (id, title)')
+            .eq('id', roundId)
+            .single();
             
-          if (roundError) {
-            console.error("Error fetching rounds:", roundError);
-          } else if (rounds && rounds.length > 0) {
-            // Get activity ids from rounds
-            const activityIds = rounds.map(round => round.activity_id).filter(Boolean);
-            
-            // Create a map of round IDs to activity IDs
-            const roundToActivityMap = rounds.reduce((acc, round) => {
-              acc[round.id] = round.activity_id;
-              return acc;
-            }, {});
-            
-            // Fetch activities
-            if (activityIds.length > 0) {
-              const { data: activities, error: activityError } = await supabase
-                .from('activity')
-                .select('id, title')
-                .in('id', activityIds);
-                
-              if (activityError) {
-                console.error("Error fetching activities:", activityError);
-              } else if (activities) {
-                // Create a map of activity IDs to activity data
-                const activityMap = activities.reduce((acc, activity) => {
-                  acc[activity.id] = activity;
-                  return acc;
-                }, {});
-                
-                // Associate rounds with their activities
-                roundActivityData = roundIds.reduce((acc, roundId) => {
-                  const activityId = roundToActivityMap[roundId];
-                  acc[roundId] = activityMap[activityId] || null;
-                  return acc;
-                }, {});
-              }
-            }
+          if (round && round.activity) {
+            roundToActivityMap.set(roundId, round.activity);
           }
         }
         
-        // Process the matches data
+        // Create a map for quick profile lookup
+        const profileMap = new Map();
+        profiles?.forEach(profile => profileMap.set(profile.id, profile));
+        
+        // Process matches
         const processedMatches: ProcessedMatch[] = [];
         
-        if (data) {
-          for (const match of data) {
-            const profile = profileData[match.profile_id_2];
-            const activity = roundActivityData[match.round_id];
-            
-            if (profile && activity) {
-              processedMatches.push({
-                id: match.id.toString(),
-                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
-                activityName: activity.title || 'Unnamed Activity',
-                activityId: activity.id.toString(),
-                matchDate: new Date(match.created_at).toISOString().split('T')[0],
-                matchScore: match.match_score,
-                matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
-                icebreaker: match.icebreaker || 'What brings you to this activity?',
-                photoUrl: profile.avatar_url,
-              });
-            }
+        for (const match of matchesData) {
+          // Find the other user's profile ID
+          const otherUserId = match.profile_id_1 === user.id ? match.profile_id_2 : match.profile_id_1;
+          const otherUserProfile = profileMap.get(otherUserId);
+          
+          if (!otherUserProfile) continue; // Skip if profile not found
+          
+          // Get the activity info
+          const activity = roundToActivityMap.get(match.round_id);
+          if (!activity) continue; // Skip if activity not found
+          
+          // Check feedback status
+          const myFeedback = feedbackData?.find(f => f.match_id === match.id && f.profile_id === user.id);
+          const otherUserFeedback = feedbackData?.find(f => f.match_id === match.id && f.profile_id === otherUserId);
+          
+          // Determine feedback states
+          const hasGivenFeedback = !!myFeedback;
+          const hasPositiveFeedback = myFeedback ? myFeedback.is_positive : false;
+          let otherUserFeedbackStatus: 'positive' | 'negative' | 'none' = 'none';
+          if (otherUserFeedback) {
+            otherUserFeedbackStatus = otherUserFeedback.is_positive ? 'positive' : 'negative';
           }
+          
+          // For the Matches tab, only show mutual positive matches
+          const shouldShow = !activityId || otherUserFeedbackStatus === 'positive' && hasPositiveFeedback;
+          
+          if (activityId && !shouldShow) continue; // Skip non-mutual matches in activity view
+          
+          const processedMatch: ProcessedMatch = {
+            id: match.id.toString(),
+            name: `${otherUserProfile.first_name || ''} ${otherUserProfile.last_name || ''}`.trim() || 'User',
+            activityName: activity.title || 'Unnamed Activity',
+            activityId: activity.id.toString(),
+            matchDate: new Date(match.created_at).toISOString().split('T')[0],
+            matchScore: Math.round(Number(match.match_score) * 100), // Convert decimal to percentage
+            matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
+            icebreaker: match.icebreaker || 'What brings you to this activity?',
+            photoUrl: otherUserProfile.avatar_url,
+            hasGivenFeedback,
+            hasPositiveFeedback,
+            otherUserFeedback: otherUserFeedbackStatus,
+            shouldShow
+          };
+          
+          processedMatches.push(processedMatch);
         }
+        
+        // Sort matches by score (highest first)
+        processedMatches.sort((a, b) => b.matchScore - a.matchScore);
         
         setMatches(processedMatches);
       } catch (error) {
-        // Log detailed error information for debugging
-        console.error("MatchList Error:", {
-          error,
-          user: user?.id,
-          activityId,
-          // Log the raw query for debugging
-          query: `match table with profile_id_1=${user?.id} ${activityId && activityId !== 'all' ? 
-            `and filtered by activity ${activityId}` : ''}`
-        });
-        
-        // Add informative error for the user
-        if (error.code === "PGRST116") {
-          toast.error("Permission denied: You don't have access to this data");
-        } else if (error.code === "42P01") {
-          toast.error("Table not found: Database configuration issue");
-        } else {
-          toast.error(`Failed to load matches: ${error.message || "Unknown error"}`);
-        }
+        console.error("MatchList Error:", error);
+        toast.error("Failed to load matches");
       } finally {
         setLoading(false);
       }
@@ -238,17 +234,56 @@ const MatchList = ({ activityId }: MatchListProps) => {
     try {
       if (!user) return;
       
-      const { error } = await supabase
+      // Check if feedback already exists
+      const { data: existingFeedback } = await supabase
         .from('match_feedback')
-        .insert({
-          match_id: parseInt(matchId),
-          profile_id: user.id,
-          is_positive: true,
-        });
+        .select('id')
+        .eq('match_id', parseInt(matchId))
+        .eq('profile_id', user.id)
+        .maybeSingle();
         
-      if (error) throw error;
+      if (existingFeedback) {
+        // Update existing feedback
+        const { error } = await supabase
+          .from('match_feedback')
+          .update({ is_positive: true })
+          .eq('id', existingFeedback.id);
+          
+        if (error) throw error;
+      } else {
+        // Insert new feedback
+        const { error } = await supabase
+          .from('match_feedback')
+          .insert({
+            match_id: parseInt(matchId),
+            profile_id: user.id,
+            is_positive: true,
+          });
+          
+        if (error) throw error;
+      }
       
-      toast.success("Positive feedback submitted!");
+      // Update local state
+      setMatches(matches.map(match => {
+        if (match.id === matchId) {
+          const updatedMatch = { 
+            ...match, 
+            hasGivenFeedback: true,
+            hasPositiveFeedback: true 
+          };
+          
+          // Check if this is now a mutual positive match
+          if (match.otherUserFeedback === 'positive') {
+            updatedMatch.shouldShow = true;
+            toast.success("It's a match! You both expressed interest.");
+          } else {
+            toast.success("Positive feedback submitted!");
+          }
+          
+          return updatedMatch;
+        }
+        return match;
+      }));
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback");
@@ -259,18 +294,72 @@ const MatchList = ({ activityId }: MatchListProps) => {
     try {
       if (!user) return;
       
-      const { error } = await supabase
+      // Check if feedback already exists
+      const { data: existingFeedback } = await supabase
         .from('match_feedback')
-        .insert({
-          match_id: parseInt(matchId),
-          profile_id: user.id,
-          is_positive: false,
-          reason
+        .select('id')
+        .eq('match_id', parseInt(matchId))
+        .eq('profile_id', user.id)
+        .maybeSingle();
+        
+      if (existingFeedback) {
+        // Update existing feedback
+        const { error } = await supabase
+          .from('match_feedback')
+          .update({ 
+            is_positive: false,
+            reason: reason
+          })
+          .eq('id', existingFeedback.id);
+          
+        if (error) throw error;
+      } else {
+        // Insert new feedback
+        const { error } = await supabase
+          .from('match_feedback')
+          .insert({
+            match_id: parseInt(matchId),
+            profile_id: user.id,
+            is_positive: false,
+            reason: reason
+          });
+          
+        if (error) throw error;
+      }
+      
+      // Update local state - move this to the bottom of the list
+      setMatches(prevMatches => {
+        const updatedMatches = prevMatches.map(match => {
+          if (match.id === matchId) {
+            // Mark as not a fit
+            return { 
+              ...match, 
+              hasGivenFeedback: true,
+              hasPositiveFeedback: false 
+            };
+          }
+          return match;
         });
         
-      if (error) throw error;
+        // Sort to move negative feedback matches to the bottom
+        return updatedMatches.sort((a, b) => {
+          if (a.hasGivenFeedback && !a.hasPositiveFeedback && 
+              !(b.hasGivenFeedback && !b.hasPositiveFeedback)) {
+            return 1; // a goes to the bottom
+          }
+          if (!(a.hasGivenFeedback && !a.hasPositiveFeedback) && 
+              b.hasGivenFeedback && !b.hasPositiveFeedback) {
+            return -1; // b goes to the bottom
+          }
+          return b.matchScore - a.matchScore; // Otherwise sort by score
+        });
+      });
       
       toast.success("Feedback submitted, thanks for helping us improve!");
+      
+      // Reset the dialog state
+      setFeedbackType(null);
+      setCurrentMatchId(null);
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback");
@@ -281,6 +370,11 @@ const MatchList = ({ activityId }: MatchListProps) => {
     setCurrentMatchId(matchId);
     setFeedbackType(type);
   };
+
+  // Get matches to display based on context
+  const displayMatches = activityId 
+    ? matches.filter(m => m.shouldShow) 
+    : matches;
 
   if (loading) {
     return (
@@ -307,13 +401,13 @@ const MatchList = ({ activityId }: MatchListProps) => {
     );
   }
 
-  if (matches.length === 0) {
+  if (displayMatches.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6 text-center py-12">
           <p className="text-muted-foreground">
             {activityId && activityId !== 'all'
-              ? "No matches found for this activity."
+              ? "No mutual matches found for this activity."
               : "You don't have any matches yet."}
           </p>
           <p className="mt-2">
@@ -334,88 +428,116 @@ const MatchList = ({ activityId }: MatchListProps) => {
   return (
     <>
       <div className="space-y-4">
-        {matches.map(match => (
-          <Card key={match.id} className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-shrink-0">
-                    <img 
-                      src={match.photoUrl || "https://i.pravatar.cc/150?img=32"} 
-                      alt={match.name} 
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 justify-between">
-                      <h3 className="text-xl font-semibold">{match.name}</h3>
-                      <div className="text-sm text-muted-foreground">
-                        Matched on {new Date(match.matchDate).toLocaleDateString()}
+        {displayMatches.map((match) => {
+          const isRejected = match.hasGivenFeedback && !match.hasPositiveFeedback;
+          
+          return (
+            <Card 
+              key={match.id} 
+              className={`overflow-hidden ${isRejected ? "opacity-60" : ""}`}
+            >
+              <CardContent className="p-0">
+                <div className="p-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-shrink-0">
+                      <img 
+                        src={match.photoUrl || "https://i.pravatar.cc/150?img=32"} 
+                        alt={match.name} 
+                        className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-col md:flex-row md:items-center gap-2 justify-between">
+                        <h3 className="text-xl font-semibold">{match.name}</h3>
+                        <div className="text-sm text-muted-foreground">
+                          Matched on {new Date(match.matchDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Activity: {match.activityName}
+                      </p>
+                      <div className="bg-muted/50 p-3 rounded-md my-2">
+                        <p className="text-sm">{match.matchReason}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-accent-foreground bg-accent/50 p-2 rounded-md">
+                        <MessageCircle size={16} />
+                        <span className="italic">{match.icebreaker}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Activity: {match.activityName}
-                    </p>
-                    <div className="bg-muted/50 p-3 rounded-md my-2">
-                      <p className="text-sm">{match.matchReason}</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-accent-foreground bg-accent/50 p-2 rounded-md">
-                      <MessageCircle size={16} />
-                      <span className="italic">{match.icebreaker}</span>
-                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="border-t bg-muted/30 p-4 flex justify-between items-center">
-                <div className="text-sm">
-                  <span className="font-medium">Match score:</span> {match.matchScore}%
-                </div>
-                <div className="flex gap-2">
-                  <Dialog open={feedbackType === "negative" && currentMatchId === match.id} onOpenChange={(open) => {
-                    if (!open) {
-                      setFeedbackType(null);
-                      setCurrentMatchId(null);
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="gap-1"
-                        onClick={() => handleOpenFeedback(match.id, "negative")}
-                      >
-                        <ThumbsDown size={16} />
-                        <span className="hidden md:inline">Not a fit</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Feedback for match with {match.name}</DialogTitle>
-                        <DialogDescription>
-                          We're sorry this wasn't a good match. Please let us know why so we can improve.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <NegativeFeedbackForm 
-                        onSubmit={(reason) => handleNegativeFeedback(match.id, reason)}
-                      />
-                    </DialogContent>
-                  </Dialog>
+                
+                <div className="border-t bg-muted/30 p-4 flex justify-between items-center">
+                  <div className="text-sm">
+                    <span className="font-medium">Match score:</span> {match.matchScore}%
+                  </div>
                   
-                  <Button 
-                    size="sm" 
-                    variant="default" 
-                    className="gap-1"
-                    onClick={() => handlePositiveFeedback(match.id)}
-                  >
-                    <ThumbsUp size={16} />
-                    <span className="hidden md:inline">Good match</span>
-                  </Button>
+                  {/* Show feedback status or feedback buttons */}
+                  <div>
+                    {match.hasGivenFeedback ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Your feedback:</span>
+                        {match.hasPositiveFeedback ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <ThumbsUp size={16} />
+                            Good match
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-red-600">
+                            <ThumbsDown size={16} />
+                            Not a fit
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Dialog open={feedbackType === "negative" && currentMatchId === match.id} onOpenChange={(open) => {
+                          if (!open) {
+                            setFeedbackType(null);
+                            setCurrentMatchId(null);
+                          }
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="gap-1"
+                              onClick={() => handleOpenFeedback(match.id, "negative")}
+                            >
+                              <ThumbsDown size={16} />
+                              <span className="hidden md:inline">Not a fit</span>
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Feedback for match with {match.name}</DialogTitle>
+                              <DialogDescription>
+                                We're sorry this wasn't a good match. Please let us know why so we can improve.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <NegativeFeedbackForm 
+                              onSubmit={(reason) => handleNegativeFeedback(match.id, reason)}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="gap-1"
+                          onClick={() => handlePositiveFeedback(match.id)}
+                        >
+                          <ThumbsUp size={16} />
+                          <span className="hidden md:inline">Good match</span>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </>
   );
