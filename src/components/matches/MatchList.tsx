@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,7 +147,7 @@ const MatchList = ({ activityId }: MatchListProps) => {
         if (profilesError) throw profilesError;
         
         // Get activity information from rounds
-        const roundToActivityMap = new Map<number, { id: number, title: string }>();
+        const roundToActivityMap = new Map<number, { id: number; title: string }>();
         for (const roundId of new Set(matchesData.map(m => m.round_id))) {
           const { data: round } = await supabase
             .from('match_round')
@@ -156,8 +155,13 @@ const MatchList = ({ activityId }: MatchListProps) => {
             .eq('id', roundId)
             .single();
             
-          if (round && round.activity) {
-            roundToActivityMap.set(roundId, round.activity);
+          if (round && round.activity && Array.isArray(round.activity)) {
+            // Cast the activity data to the correct type
+            const activityData: { id: number; title: string } = {
+              id: typeof round.activity[0].id === 'number' ? round.activity[0].id : Number(round.activity[0].id),
+              title: String(round.activity[0].title || '')
+            };
+            roundToActivityMap.set(roundId, activityData);
           }
         }
         

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -150,7 +149,7 @@ const MatchHistory = () => {
             icebreaker: match.icebreaker || 'What brings you to this activity?',
             photoUrl: otherUserProfile?.avatar_url || null,
             feedbackGiven: !!myFeedback,
-            feedback: myFeedback ? (myFeedback.is_positive ? "positive" : "negative") : undefined,
+            feedback: myFeedback ? (myFeedback.is_positive ? "positive" : "negative") as "positive" | "negative" : undefined,
             mutualMatch: !!mutualMatch
           };
         });
@@ -187,7 +186,7 @@ const MatchHistory = () => {
       // Update the local state to reflect the feedback
       setMatches(matches.map(match => 
         match.id === matchId 
-          ? { ...match, feedbackGiven: true, feedback: "positive" } 
+          ? { ...match, feedbackGiven: true, feedback: "positive" as "positive" } 
           : match
       ));
       
@@ -216,7 +215,7 @@ const MatchHistory = () => {
       // Update the local state to reflect the feedback
       setMatches(matches.map(match => 
         match.id === matchId 
-          ? { ...match, feedbackGiven: true, feedback: "negative" } 
+          ? { ...match, feedbackGiven: true, feedback: "negative" as "negative" } 
           : match
       ));
       
