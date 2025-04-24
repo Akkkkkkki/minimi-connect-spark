@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { toast } from '@/components/ui/sonner';
 
@@ -40,6 +39,7 @@ export const signUpWithEmail = async (
   userData: { first_name: string; last_name: string; gender: string; birth_month: string; birth_year: string }
 ) => {
   try {
+    // First, perform sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -55,6 +55,7 @@ export const signUpWithEmail = async (
     });
 
     if (error) {
+      console.error('Auth sign up error:', error);
       toast.error(error.message);
       return { user: null, session: null, error };
     }
@@ -62,29 +63,40 @@ export const signUpWithEmail = async (
     // Successfully signed up, now let's ensure the profile is properly updated
     if (data.user) {
       try {
+        // Convert string values to appropriate types
+        const birthMonth = userData.birth_month ? parseInt(userData.birth_month) : null;
+        const birthYear = userData.birth_year ? parseInt(userData.birth_year) : null;
+        
+        // Wait for the profile update to complete
         const { error: profileError } = await supabase
           .from('profile')
           .upsert({
             id: data.user.id,
             first_name: userData.first_name,
             last_name: userData.last_name,
-            birth_month: parseInt(userData.birth_month),
-            birth_year: parseInt(userData.birth_year),
+            birth_month: birthMonth,
+            birth_year: birthYear,
             updated_at: new Date().toISOString()
+          }, { 
+            onConflict: 'id', // Specifying the conflict column
+            ignoreDuplicates: false // Update if exists
           });
           
         if (profileError) {
           console.error('Error updating profile:', profileError);
+          toast.error(`Profile update error: ${profileError.message}`);
           // We don't want to fail the signup if just the profile update fails
           // Instead, log it and the user can complete their profile later
         }
-      } catch (profileErr) {
+      } catch (profileErr: any) {
         console.error('Unexpected profile update error:', profileErr);
+        toast.error(`Profile error: ${profileErr.message || 'Unknown error'}`);
       }
     }
 
     return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
+    console.error('Signup error:', err);
     toast.error(err.message || 'An error occurred during sign up');
     return { user: null, session: null, error: err };
   }
