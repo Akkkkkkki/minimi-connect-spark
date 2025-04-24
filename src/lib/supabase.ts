@@ -37,7 +37,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signUpWithEmail = async (
   email: string, 
   password: string, 
-  userData: { name: string; gender: string; birth_month: string; birth_year: string }
+  userData: { first_name: string; last_name: string; gender: string; birth_month: string; birth_year: string }
 ) => {
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -45,7 +45,8 @@ export const signUpWithEmail = async (
       password,
       options: {
         data: {
-          name: userData.name,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
           gender: userData.gender,
           birth_month: userData.birth_month,
           birth_year: userData.birth_year,
@@ -56,6 +57,30 @@ export const signUpWithEmail = async (
     if (error) {
       toast.error(error.message);
       return { user: null, session: null, error };
+    }
+    
+    // Successfully signed up, now let's ensure the profile is properly updated
+    if (data.user) {
+      try {
+        const { error: profileError } = await supabase
+          .from('profile')
+          .upsert({
+            id: data.user.id,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            birth_month: parseInt(userData.birth_month),
+            birth_year: parseInt(userData.birth_year),
+            updated_at: new Date().toISOString()
+          });
+          
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+          // We don't want to fail the signup if just the profile update fails
+          // Instead, log it and the user can complete their profile later
+        }
+      } catch (profileErr) {
+        console.error('Unexpected profile update error:', profileErr);
+      }
     }
 
     return { user: data.user, session: data.session, error: null };

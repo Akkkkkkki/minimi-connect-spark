@@ -26,7 +26,8 @@ import { signUpWithEmail } from "@/lib/supabase";
 import { toast } from "@/components/ui/sonner";
 
 const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
@@ -63,7 +64,8 @@ const SignupForm = () => {
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -76,10 +78,11 @@ const SignupForm = () => {
   const onSubmit = async (values: z.infer<typeof signupSchema>) => {
     try {
       setIsLoading(true);
-      const { name, email, password, gender, birthMonth, birthYear } = values;
+      const { firstName, lastName, email, password, gender, birthMonth, birthYear } = values;
       
       const { error } = await signUpWithEmail(email, password, {
-        name,
+        first_name: firstName,
+        last_name: lastName,
         gender,
         birth_month: birthMonth,
         birth_year: birthYear,
@@ -105,19 +108,35 @@ const SignupForm = () => {
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your full name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your first name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your last name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           
           <FormField
             control={form.control}

@@ -7,9 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 
 const profileSchema = z.object({
@@ -70,7 +70,6 @@ const OnboardingPage = () => {
       });
     } else {
       toast({
-        variant: "default",
         title: "Profile Complete!",
         description: "You can update these details anytime in your profile settings.",
       });
