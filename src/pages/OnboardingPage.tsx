@@ -63,14 +63,11 @@ const OnboardingPage = () => {
       .eq("id", user.id);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Could not save profile",
+      toast.error("Could not save profile", {
         description: error.message,
       });
     } else {
-      toast({
-        title: "Profile Complete!",
+      toast.success("Profile Complete!", {
         description: "You can update these details anytime in your profile settings.",
       });
       navigate("/"); // Redirect to main page after onboarding
