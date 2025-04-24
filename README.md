@@ -34,6 +34,10 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Note
+
+Please note that the folder docs contains documentations only, nothing executable is or should be stored there. For example, the docs/supabase folder contains the supabase schema, for the actually database that is hosted on Supabase remotely.
+
 ---
 
 

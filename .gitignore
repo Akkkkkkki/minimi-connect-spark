@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentations for cursor
+docs/*
+!docs/supabase/README.md
+!docs/supabase/schema.sql
+!docs/supabase/config.toml
+!docs/supabase/migrations
+
+# Supabase temporary files
+**/.temp/
+**/.branches/

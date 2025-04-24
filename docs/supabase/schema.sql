@@ -62,9 +62,12 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
+  SET search_path = public; -- Specify the search path
+
   INSERT INTO public.profile (id, created_at, updated_at)
   VALUES (NEW.id, NOW(), NOW())
   ON CONFLICT (id) DO NOTHING;
+  
   RETURN NEW;
 END;
 $$;
@@ -772,7 +775,16 @@ CREATE POLICY "Users can view their own profiles" ON "public"."profile" FOR SELE
 ALTER TABLE "public"."activity" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."activity_feedback" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."activity_participant" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."activity_tag" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."chat_message" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."match" ENABLE ROW LEVEL SECURITY;
@@ -788,6 +800,12 @@ ALTER TABLE "public"."profile" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."questionnaire" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."questionnaire_response" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."tag" ENABLE ROW LEVEL SECURITY;
 
 
 
