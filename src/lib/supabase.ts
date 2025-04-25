@@ -42,12 +42,13 @@ export const signUpWithEmail = async (
   console.log('User data after client-side conversion:', JSON.stringify(userData, null, 2));
   
   try {
-    // Ensure birth_month and birth_year are properly formatted
+    // First, perform sign up with Supabase Auth
+    console.log('Calling Supabase auth.signUp with formatted data...');
+    
+    // Convert string values to proper types
     const birthMonth = userData.birth_month ? parseInt(userData.birth_month) : null;
     const birthYear = userData.birth_year ? parseInt(userData.birth_year) : null;
     
-    // First, perform sign up with Supabase Auth
-    console.log('Calling Supabase auth.signUp with formatted data...');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -56,6 +57,7 @@ export const signUpWithEmail = async (
           first_name: userData.first_name,
           last_name: userData.last_name,
           gender: userData.gender,
+          // Store as numbers in metadata, not strings
           birth_month: birthMonth,
           birth_year: birthYear,
         }
@@ -71,87 +73,56 @@ export const signUpWithEmail = async (
     
     console.log('Auth sign up successful, user:', data.user?.id);
     
-    // Successfully signed up, now let's ensure the profile is properly updated
+    // If we have a user, create their profile immediately to ensure it exists
     if (data.user) {
       try {
-        // Add a small delay to ensure the trigger has time to create the profile
-        console.log('Waiting for profile creation by trigger...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check if profile already exists
-        console.log('Checking if profile exists...');
-        const { data: existingProfile, error: profileCheckError } = await supabase
+        // Check if a profile already exists
+        const { data: existingProfile, error: checkError } = await supabase
           .from('profile')
-          .select('*')
+          .select('id')
           .eq('id', data.user.id)
           .single();
           
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('Error checking profile:', profileCheckError);
-        } else {
-          console.log('Profile check result:', existingProfile ? 'Found' : 'Not found');
-        }
-        
-        // Only proceed with update if profile exists
-        if (existingProfile) {
-          console.log('Attempting to update profile...');
+        if (checkError && checkError.code === 'PGRST116') {
+          // Profile does not exist, create it
+          console.log('Creating profile for new user:', data.user.id);
+          
           const profileData = {
             id: data.user.id,
             first_name: userData.first_name,
             last_name: userData.last_name,
-            gender: userData.gender,
+            gender: userData.gender.toLowerCase(),
             birth_month: birthMonth,
             birth_year: birthYear,
-            updated_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            deleted: false
           };
-          console.log('Profile data to insert:', JSON.stringify(profileData, null, 2));
           
-          const { error: profileError } = await supabase
+          const { error: insertError } = await supabase
             .from('profile')
-            .upsert(profileData, { 
-              onConflict: 'id', 
-              ignoreDuplicates: false
-            });
+            .insert([profileData]);
             
-          if (profileError) {
-            console.error('Error updating profile:', profileError);
-            console.error('Error details:', JSON.stringify(profileError, null, 2));
-            toast.error(`Profile update error: ${profileError.message}`);
+          if (insertError) {
+            // Log the error but continue - don't fail the signup
+            console.error('Error creating profile:', insertError);
+            console.error('Error details:', JSON.stringify(insertError, null, 2));
           } else {
-            console.log('Profile update successful');
+            console.log('Profile created successfully');
           }
+        } else if (!checkError) {
+          console.log('Profile already exists for user');
         } else {
-          console.error('Profile not found after signup, trigger may have failed');
-          
-          // Instead of just showing an error, try to create the profile
-          console.log('Attempting to create missing profile...');
-          const { error: createError } = await supabase
-            .from('profile')
-            .insert({
-              id: data.user.id,
-              first_name: userData.first_name,
-              last_name: userData.last_name,
-              gender: userData.gender,
-              birth_month: birthMonth,
-              birth_year: birthYear,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-            
-          if (createError) {
-            console.error('Error creating profile:', createError);
-            toast.error(`Profile creation error: ${createError.message}`);
-          } else {
-            console.log('Profile manually created successfully');
-          }
+          console.error('Error checking for existing profile:', checkError);
         }
       } catch (profileErr: any) {
-        console.error('Unexpected profile update error:', profileErr);
+        // Log the profile creation error but don't fail the signup process
+        console.error('Profile creation error:', profileErr);
         console.error('Error details:', profileErr.stack || JSON.stringify(profileErr, null, 2));
-        toast.error(`Profile error: ${profileErr.message || 'Unknown error'}`);
       }
     }
-
+    
+    // Return successful auth result regardless of profile creation status
     return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
     console.error('Signup error:', err);

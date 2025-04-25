@@ -88,6 +88,56 @@ $$;
 
 ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."update_user_profile"("user_id" "uuid", "first_name_val" "text", "last_name_val" "text", "gender_val" "text", "birth_month_val" integer, "birth_year_val" integer) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  -- Check if user exists
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = user_id) THEN
+    -- Update the profile
+    UPDATE public.profile
+    SET
+      first_name = first_name_val,
+      last_name = last_name_val,
+      gender = gender_val,
+      birth_month = birth_month_val,
+      birth_year = birth_year_val,
+      updated_at = NOW()
+    WHERE id = user_id;
+    
+    -- If no rows were updated, it means the profile doesn't exist yet
+    -- In this case, try to insert a new profile
+    IF NOT FOUND THEN
+      INSERT INTO public.profile (
+        id,
+        first_name,
+        last_name,
+        gender,
+        birth_month,
+        birth_year,
+        created_at,
+        updated_at
+      ) VALUES (
+        user_id,
+        first_name_val,
+        last_name_val,
+        gender_val,
+        birth_month_val,
+        birth_year_val,
+        NOW(),
+        NOW()
+      );
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'User with ID % not found', user_id;
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_user_profile"("user_id" "uuid", "first_name_val" "text", "last_name_val" "text", "gender_val" "text", "birth_month_val" integer, "birth_year_val" integer) OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -295,8 +345,11 @@ CREATE TABLE IF NOT EXISTS "public"."profile" (
     "bio" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "deleted" boolean DEFAULT false NOT NULL
+    "deleted" boolean DEFAULT false NOT NULL,
+    "gender" "text"
 );
+
+ALTER TABLE ONLY "public"."profile" FORCE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."profile" OWNER TO "postgres";
@@ -685,6 +738,10 @@ CREATE POLICY "Service role can manage all profiles" ON "public"."profile" TO "s
 
 
 
+CREATE POLICY "Service role can manage profiles" ON "public"."profile" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
 CREATE POLICY "Users can create their own activities" ON "public"."activity" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "creator_id"));
 
 
@@ -997,6 +1054,12 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_user_profile"("user_id" "uuid", "first_name_val" "text", "last_name_val" "text", "gender_val" "text", "birth_month_val" integer, "birth_year_val" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."update_user_profile"("user_id" "uuid", "first_name_val" "text", "last_name_val" "text", "gender_val" "text", "birth_month_val" integer, "birth_year_val" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_user_profile"("user_id" "uuid", "first_name_val" "text", "last_name_val" "text", "gender_val" "text", "birth_month_val" integer, "birth_year_val" integer) TO "service_role";
 
 
 
