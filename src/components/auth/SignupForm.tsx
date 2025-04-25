@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
-import { signUpWithEmail } from "@/lib/supabase";
+import { createUserProfile, signUpWithEmail } from "@/lib/supabase";
 import { toast } from "@/components/ui/sonner";
 
 const signupSchema = z.object({
@@ -103,7 +103,8 @@ const SignupForm = () => {
         birth_year: birthYear
       });
       
-      const { error } = await signUpWithEmail(email, password, {
+      // First, attempt the signup
+      const { user, error } = await signUpWithEmail(email, password, {
         first_name: firstName,
         last_name: lastName,
         gender: normalizedGender,
@@ -114,6 +115,35 @@ const SignupForm = () => {
       if (error) {
         toast.error(`Signup failed: ${error.message}`);
         return;
+      }
+      
+      // If signup is successful but we don't have a user (email confirmation required)
+      if (!user) {
+        toast.success("Account created successfully! Please check your email to confirm your account.");
+        navigate('/login');
+        return;
+      }
+      
+      // If we have a user, create their profile
+      try {
+        const { success, error: profileError } = await createUserProfile(
+          user.id,
+          {
+            first_name: firstName,
+            last_name: lastName,
+            gender: normalizedGender,
+            birth_month: birthMonthNumber,
+            birth_year: birthYear
+          }
+        );
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          // Don't show this error to the user - login was successful
+        }
+      } catch (profileErr) {
+        console.error('Profile creation error:', profileErr);
+        // Don't show this error to the user - login was successful
       }
       
       toast.success("Account created successfully! Please check your email to confirm your account.");

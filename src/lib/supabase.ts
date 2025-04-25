@@ -39,96 +39,92 @@ export const signUpWithEmail = async (
   userData: { first_name: string; last_name: string; gender: string; birth_month: string; birth_year: string }
 ) => {
   console.log('Starting signup process with email:', email);
-  console.log('User data after client-side conversion:', JSON.stringify(userData, null, 2));
   
   try {
-    // First, perform sign up with Supabase Auth
-    console.log('Calling Supabase auth.signUp with formatted data...');
-    
-    // Convert string values to proper types
-    const birthMonth = userData.birth_month ? parseInt(userData.birth_month) : null;
-    const birthYear = userData.birth_year ? parseInt(userData.birth_year) : null;
-    
+    // We can't check if the email exists with the anon key, so we'll just attempt the signup
+    console.log('Calling Supabase auth.signUp...');
+    // Basic signup without any metadata to avoid potential issues
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          gender: userData.gender,
-          // Store as numbers in metadata, not strings
-          birth_month: birthMonth,
-          birth_year: birthYear,
-        }
-      }
     });
-
+    
     if (error) {
       console.error('Auth sign up error:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
-      toast.error(error.message);
+      
+      // If we get the specific database error, give a more helpful message
+      if (error.message === 'Database error updating user') {
+        toast.error('There was a problem creating your account. Please try using a different email address.');
+      } else {
+        toast.error(error.message);
+      }
+      
       return { user: null, session: null, error };
     }
     
     console.log('Auth sign up successful, user:', data.user?.id);
     
-    // If we have a user, create their profile immediately to ensure it exists
-    if (data.user) {
-      try {
-        // Check if a profile already exists
-        const { data: existingProfile, error: checkError } = await supabase
-          .from('profile')
-          .select('id')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (checkError && checkError.code === 'PGRST116') {
-          // Profile does not exist, create it
-          console.log('Creating profile for new user:', data.user.id);
-          
-          const profileData = {
-            id: data.user.id,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            gender: userData.gender.toLowerCase(),
-            birth_month: birthMonth,
-            birth_year: birthYear,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            deleted: false
-          };
-          
-          const { error: insertError } = await supabase
-            .from('profile')
-            .insert([profileData]);
-            
-          if (insertError) {
-            // Log the error but continue - don't fail the signup
-            console.error('Error creating profile:', insertError);
-            console.error('Error details:', JSON.stringify(insertError, null, 2));
-          } else {
-            console.log('Profile created successfully');
-          }
-        } else if (!checkError) {
-          console.log('Profile already exists for user');
-        } else {
-          console.error('Error checking for existing profile:', checkError);
-        }
-      } catch (profileErr: any) {
-        // Log the profile creation error but don't fail the signup process
-        console.error('Profile creation error:', profileErr);
-        console.error('Error details:', profileErr.stack || JSON.stringify(profileErr, null, 2));
-      }
-    }
-    
-    // Return successful auth result regardless of profile creation status
-    return { user: data.user, session: data.session, error: null };
+    // Return the user data even without adding profile - we can handle that on the client side
+    return { 
+      user: data.user, 
+      session: data.session, 
+      error: null 
+    };
   } catch (err: any) {
     console.error('Signup error:', err);
     console.error('Error details:', err.stack || JSON.stringify(err, null, 2));
     toast.error(err.message || 'An error occurred during sign up');
     return { user: null, session: null, error: err };
+  }
+};
+
+// Separate function to create profile after successful signup
+export const createUserProfile = async (
+  userId: string,
+  profileData: { 
+    first_name: string; 
+    last_name: string; 
+    gender: string; 
+    birth_month: string | number | null; 
+    birth_year: string | number | null 
+  }
+) => {
+  try {
+    // Convert string values to proper types if they're not already
+    const birthMonth = typeof profileData.birth_month === 'string' 
+      ? parseInt(profileData.birth_month) 
+      : profileData.birth_month;
+      
+    const birthYear = typeof profileData.birth_year === 'string' 
+      ? parseInt(profileData.birth_year) 
+      : profileData.birth_year;
+      
+    const profile = {
+      id: userId,
+      first_name: profileData.first_name,
+      last_name: profileData.last_name,
+      gender: profileData.gender.toLowerCase(),
+      birth_month: birthMonth,
+      birth_year: birthYear,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted: false
+    };
+    
+    const { error } = await supabase
+      .from('profile')
+      .insert([profile]);
+      
+    if (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+    
+    return { success: true, error: null };
+  } catch (err: any) {
+    console.error('Profile creation error:', err);
+    return { success: false, error: err };
   }
 };
 
