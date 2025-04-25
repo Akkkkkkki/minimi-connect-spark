@@ -38,8 +38,16 @@ export const signUpWithEmail = async (
   password: string, 
   userData: { first_name: string; last_name: string; gender: string; birth_month: string; birth_year: string }
 ) => {
+  console.log('Starting signup process with email:', email);
+  console.log('User data after client-side conversion:', JSON.stringify(userData, null, 2));
+  
   try {
+    // Ensure birth_month and birth_year are properly formatted
+    const birthMonth = userData.birth_month ? parseInt(userData.birth_month) : null;
+    const birthYear = userData.birth_year ? parseInt(userData.birth_year) : null;
+    
     // First, perform sign up with Supabase Auth
+    console.log('Calling Supabase auth.signUp with formatted data...');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -48,48 +56,98 @@ export const signUpWithEmail = async (
           first_name: userData.first_name,
           last_name: userData.last_name,
           gender: userData.gender,
-          birth_month: userData.birth_month,
-          birth_year: userData.birth_year,
+          birth_month: birthMonth,
+          birth_year: birthYear,
         }
       }
     });
 
     if (error) {
       console.error('Auth sign up error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error(error.message);
       return { user: null, session: null, error };
     }
     
+    console.log('Auth sign up successful, user:', data.user?.id);
+    
     // Successfully signed up, now let's ensure the profile is properly updated
     if (data.user) {
       try {
-        // Convert string values to appropriate types
-        const birthMonth = userData.birth_month ? parseInt(userData.birth_month) : null;
-        const birthYear = userData.birth_year ? parseInt(userData.birth_year) : null;
+        // Add a small delay to ensure the trigger has time to create the profile
+        console.log('Waiting for profile creation by trigger...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Wait for the profile update to complete
-        const { error: profileError } = await supabase
+        // Check if profile already exists
+        console.log('Checking if profile exists...');
+        const { data: existingProfile, error: profileCheckError } = await supabase
           .from('profile')
-          .upsert({
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error('Error checking profile:', profileCheckError);
+        } else {
+          console.log('Profile check result:', existingProfile ? 'Found' : 'Not found');
+        }
+        
+        // Only proceed with update if profile exists
+        if (existingProfile) {
+          console.log('Attempting to update profile...');
+          const profileData = {
             id: data.user.id,
             first_name: userData.first_name,
             last_name: userData.last_name,
+            gender: userData.gender,
             birth_month: birthMonth,
             birth_year: birthYear,
             updated_at: new Date().toISOString()
-          }, { 
-            onConflict: 'id', // Specifying the conflict column
-            ignoreDuplicates: false // Update if exists
-          });
+          };
+          console.log('Profile data to insert:', JSON.stringify(profileData, null, 2));
           
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-          toast.error(`Profile update error: ${profileError.message}`);
-          // We don't want to fail the signup if just the profile update fails
-          // Instead, log it and the user can complete their profile later
+          const { error: profileError } = await supabase
+            .from('profile')
+            .upsert(profileData, { 
+              onConflict: 'id', 
+              ignoreDuplicates: false
+            });
+            
+          if (profileError) {
+            console.error('Error updating profile:', profileError);
+            console.error('Error details:', JSON.stringify(profileError, null, 2));
+            toast.error(`Profile update error: ${profileError.message}`);
+          } else {
+            console.log('Profile update successful');
+          }
+        } else {
+          console.error('Profile not found after signup, trigger may have failed');
+          
+          // Instead of just showing an error, try to create the profile
+          console.log('Attempting to create missing profile...');
+          const { error: createError } = await supabase
+            .from('profile')
+            .insert({
+              id: data.user.id,
+              first_name: userData.first_name,
+              last_name: userData.last_name,
+              gender: userData.gender,
+              birth_month: birthMonth,
+              birth_year: birthYear,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+            
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            toast.error(`Profile creation error: ${createError.message}`);
+          } else {
+            console.log('Profile manually created successfully');
+          }
         }
       } catch (profileErr: any) {
         console.error('Unexpected profile update error:', profileErr);
+        console.error('Error details:', profileErr.stack || JSON.stringify(profileErr, null, 2));
         toast.error(`Profile error: ${profileErr.message || 'Unknown error'}`);
       }
     }
@@ -97,6 +155,7 @@ export const signUpWithEmail = async (
     return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
     console.error('Signup error:', err);
+    console.error('Error details:', err.stack || JSON.stringify(err, null, 2));
     toast.error(err.message || 'An error occurred during sign up');
     return { user: null, session: null, error: err };
   }

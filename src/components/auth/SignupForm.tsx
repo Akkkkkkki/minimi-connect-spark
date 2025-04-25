@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -80,11 +79,35 @@ const SignupForm = () => {
       setIsLoading(true);
       const { firstName, lastName, email, password, gender, birthMonth, birthYear } = values;
       
+      // Convert month name to number if needed
+      let birthMonthNumber = birthMonth;
+      const monthNameToNumber: Record<string, string> = {
+        'January': '1', 'February': '2', 'March': '3', 'April': '4',
+        'May': '5', 'June': '6', 'July': '7', 'August': '8',
+        'September': '9', 'October': '10', 'November': '11', 'December': '12'
+      };
+      
+      // If birthMonth is a month name, convert it to its number
+      if (monthNameToNumber[birthMonth]) {
+        birthMonthNumber = monthNameToNumber[birthMonth];
+      }
+      
+      // Normalize gender (lowercase)
+      const normalizedGender = gender.toLowerCase();
+      
+      console.log('Sending signup data with converted values:', {
+        first_name: firstName,
+        last_name: lastName,
+        gender: normalizedGender,
+        birth_month: birthMonthNumber,
+        birth_year: birthYear
+      });
+      
       const { error } = await signUpWithEmail(email, password, {
         first_name: firstName,
         last_name: lastName,
-        gender,
-        birth_month: birthMonth,
+        gender: normalizedGender,
+        birth_month: birthMonthNumber,
         birth_year: birthYear,
       });
       
