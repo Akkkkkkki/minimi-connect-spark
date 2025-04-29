@@ -209,7 +209,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
                   </div>
                   
                   <Badge variant="outline" className="ml-2">
-                    {match.matchScore}% Match
+                    {Math.round(match.matchScore * 100)}% Match
                   </Badge>
                 </div>
                 

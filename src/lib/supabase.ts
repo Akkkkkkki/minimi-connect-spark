@@ -1,16 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { toast } from '@/components/ui/sonner';
+import { getEnv } from './env';
 
 // Initialize the Supabase client
-const supabaseUrl = "https://uiswjpjgxsrnfxerzbrw.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpc3dqcGpneHNybmZ4ZXJ6YnJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1NTczNzIsImV4cCI6MjA2MDEzMzM3Mn0.UKVXz2DgQhj2GqeTIIu1WJcDREbL2i6wtQoPJWJA5Y8";
+const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = getEnv();
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
   auth: {
-    storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
 });
 
 // Auth helper functions

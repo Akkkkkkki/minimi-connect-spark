@@ -54,10 +54,32 @@ const generateYearOptions = () => {
 
 const years = generateYearOptions();
 
+// Helper function to normalize email
+const normalizeEmail = (email: string): string => {
+  // Convert to lowercase
+  let normalized = email.toLowerCase().trim();
+  
+  // Remove dots from Gmail addresses (they're ignored by Gmail)
+  if (normalized.endsWith('@gmail.com')) {
+    const [localPart, domain] = normalized.split('@');
+    const localPartWithoutDots = localPart.replace(/\./g, '');
+    normalized = `${localPartWithoutDots}@${domain}`;
+  }
+  
+  return normalized;
+};
+
+// Generate a random email for testing
+const generateRandomEmail = () => {
+  const randomString = Math.random().toString(36).substring(2, 12);
+  return `test.${randomString}@example.com`;
+};
+
 const SignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const navigate = useNavigate();
   
   const form = useForm<z.infer<typeof signupSchema>>({
@@ -77,6 +99,8 @@ const SignupForm = () => {
   const onSubmit = async (values: z.infer<typeof signupSchema>) => {
     try {
       setIsLoading(true);
+      setSignupError(null);
+      
       const { firstName, lastName, email, password, gender, birthMonth, birthYear } = values;
       
       // Convert month name to number if needed
@@ -95,6 +119,9 @@ const SignupForm = () => {
       // Normalize gender (lowercase)
       const normalizedGender = gender.toLowerCase();
       
+      // Normalize email
+      const normalizedEmail = normalizeEmail(email);
+      
       console.log('Sending signup data with converted values:', {
         first_name: firstName,
         last_name: lastName,
@@ -103,8 +130,9 @@ const SignupForm = () => {
         birth_year: birthYear
       });
       
-      // First, attempt the signup
-      const { user, error } = await signUpWithEmail(email, password, {
+      // First, attempt the signup with normalized email
+      console.log(`Using normalized email: ${normalizedEmail}`);
+      const { user, error } = await signUpWithEmail(normalizedEmail, password, {
         first_name: firstName,
         last_name: lastName,
         gender: normalizedGender,
@@ -113,7 +141,14 @@ const SignupForm = () => {
       });
       
       if (error) {
-        toast.error(`Signup failed: ${error.message}`);
+        console.error('Error details from form:', error);
+        
+        // Handle specific error cases with user-friendly messages
+        if (error.message?.includes('Database error')) {
+          setSignupError("There was a problem creating your account. Please try using a different email address or try again later.");
+        } else {
+          setSignupError(`Signup failed: ${error.message}`);
+        }
         return;
       }
       
@@ -149,7 +184,8 @@ const SignupForm = () => {
       toast.success("Account created successfully! Please check your email to confirm your account.");
       navigate('/login');
     } catch (err: any) {
-      toast.error(`Signup error: ${err.message}`);
+      console.error('Unexpected signup error:', err);
+      setSignupError(`Signup error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +194,12 @@ const SignupForm = () => {
   return (
     <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm">
       <h2 className="text-2xl font-bold text-center mb-6">Create Your Account</h2>
+      
+      {signupError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+          {signupError}
+        </div>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

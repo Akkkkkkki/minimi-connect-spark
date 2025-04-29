@@ -1,13 +1,11 @@
-
 import { createClient } from '@supabase/supabase-js';
-import { Database } from "@/utils/supabaseTypes";
+import { getEnv } from '@/lib/env';
 
-const SUPABASE_URL = "https://uiswjpjgxsrnfxerzbrw.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpc3dqcGpneHNybmZ4ZXJ6YnJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ1NTczNzIsImV4cCI6MjA2MDEzMzM3Mn0.UKVXz2DgQhj2GqeTIIu1WJcDREbL2i6wtQoPJWJA5Y8";
+const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = getEnv();
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
 });

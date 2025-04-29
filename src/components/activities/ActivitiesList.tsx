@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import ActivityCard, { ActivityCardProps } from "./ActivityCard";
 import ActivityFilters from "./ActivityFilters";
@@ -18,7 +17,12 @@ const ActivitiesList = () => {
         
         const { data, error } = await supabase
           .from('activity')
-          .select('*')
+          .select(`
+            *,
+            activity_participant (
+              id
+            )
+          `)
           .order('start_time', { ascending: true });
           
         if (error) {
@@ -37,7 +41,10 @@ const ActivitiesList = () => {
               location: activity.location,
               date: new Date(activity.start_time).toLocaleDateString(),
               time: new Date(activity.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-              participants: { current: 0, max: 30 }, // We'll update this in a future iteration
+              participants: { 
+                current: activity.activity_participant?.length || 0, 
+                max: 30 
+              },
               tags: limitedTags,
             };
           });

@@ -24,6 +24,18 @@ npm i
 npm run dev
 ```
 
+## Environment Variables
+
+The application uses the following environment variables:
+
+- `VITE_SUPABASE_URL`: Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
+- `VITE_API_URL`: (Optional) API URL for development
+- `VITE_APP_NAME`: (Optional) Application name, defaults to "MINIMI"
+- `VITE_APP_ENV`: (Optional) Environment name, defaults to "development"
+
+These values are already configured in the `.env` file.
+
 ## What technologies are used for this project?
 
 This project is built with:
@@ -93,7 +105,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
   - Age distribution
   - Gender mix
   - Top shared interests or tags
-  - Summary of match feedback (e.g., “60% of matches were rated positive”)
+  - Summary of match feedback (e.g., "60% of matches were rated positive")
 - Track:
   - Total signups
   - Completed questionnaires
@@ -122,7 +134,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 ### Feedback Loop
 - Thumbs up/down post-match
-- Feedback reason (e.g., “bad vibe” or “too far”)
+- Feedback reason (e.g., "bad vibe" or "too far")
 - Future matching model can adapt based on aggregate feedback
 
 ### Multi-platform Support
@@ -163,7 +175,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Granular privacy settings per user
 - Admin moderation tools for event/content review
 - GDPR-compliant data handling
-- Support for “right to be forgotten” and data export
+- Support for "right to be forgotten" and data export
 
 ## Development Phases or Milestones
 
@@ -197,7 +209,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 - Strengthen core matching algorithm as key product differentiator
 - Integrate with 3rd-party identity platforms (e.g., LinkedIn) to enrich profiles and improve match quality with less user input
-- Develop APIs so external event platforms can plug into MINIMI’s matching system
+- Develop APIs so external event platforms can plug into MINIMI's matching system
 - Native mobile apps (iOS + Android)
 - Personality-based compatibility using psychometric models (e.g., Big Five)
 - Calendar integrations and in-app scheduling tools
@@ -256,8 +268,8 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
   - Encouraging, not pushy
 
 **Examples:**
-- Instead of “You must complete this to proceed” → “Let’s finish this step together”
-- Instead of “No results found” → “Looks like there’s nothing here right now — try adjusting your filters!”
+- Instead of "You must complete this to proceed" → "Let's finish this step together"
+- Instead of "No results found" → "Looks like there's nothing here right now — try adjusting your filters!"
 
 
 ## Animations & Transitions
@@ -325,9 +337,9 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 ### 🏠 Homepage
 - Hero section explaining flexible matching purpose
-- Call-to-action: “Browse Activities”
+- Call-to-action: "Browse Activities"
 - Testimonials or stories from successful matches
-- “Sign up to match” prompt with benefits
+- "Sign up to match" prompt with benefits
 
 ### 🔍 Activity Explorer
 - Public page, viewable before signup
@@ -338,7 +350,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 ### 📝 Activity Detail Page
 - Description, time, location, tags
 - Shows organizer name (if public)
-- Call-to-action: “Join and Get Matched”
+- Call-to-action: "Join and Get Matched"
 - Login/signup required before joining
 
 ### 👤 Registration / Onboarding Flow
