@@ -54,11 +54,11 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
           // Fetch questionnaire for this activity
           const { data: aqData, error: aqError } = await supabase
             .from('activity_questionnaire')
-            .select('*, questionnaire:questionnaire_id(*)')
+            .select('*')
             .eq('activity_id', parseInt(activityId))
             .maybeSingle();
           if (aqError) throw aqError;
-          const hasQuestionnaire = !!(aqData && aqData.questionnaire);
+          const hasQuestionnaire = !!aqData;
           const formattedActivity = {
             ...activityData,
             hasQuestionnaire,

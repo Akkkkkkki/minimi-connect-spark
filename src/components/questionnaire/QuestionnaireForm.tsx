@@ -61,8 +61,8 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         if (!aqData) {
           setQuestions([]);
           setQuestionnaire(null);
-          console.log("[DEBUG] No questionnaire found for activity");
         } else {
+          setQuestionnaire(aqData);
           // Fetch questions for this questionnaire_id
           const { data: questionsData, error: questionsError } = await supabase
             .from("questionnaire_content")
@@ -374,7 +374,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               <Label htmlFor="title">Questionnaire Title</Label>
               <Input
                 id="title"
-                value={"Activity Questionnaire"}
+                value={activity?.title || ""}
                 disabled
                 className="w-full"
               />
@@ -386,7 +386,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={"Please complete this questionnaire to help us match you with others."}
+                value={activity?.description || ""}
                 disabled
                 className="w-full"
               />
@@ -395,59 +395,63 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
 
           {isParticipant && questions && questions.length > 0 && (
             <div className="space-y-6">
-              {questions.map((question) => (
-                <div key={question.id} className="space-y-3 border-b pb-6">
-                  <div className="flex items-center">
-                    <Label className="text-base font-medium">
-                      {question.question_text}
-                      {question.required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                  </div>
-                  
-                  {question.question_type === "text" && (
-                    <Textarea
-                      placeholder="Your answer"
-                      value={(answers[question.id]?.answer as string) || ""}
-                      onChange={(e) => handleTextAnswer(question.id, e.target.value)}
-                      className="w-full"
-                    />
-                  )}
-                  
-                  {question.question_type === "multiple_choice" && question.options && (
-                    <div className="space-y-3">
-                      {question.options.length <= 4 ? (
-                        <RadioGroup
-                          value={(answers[question.id]?.answer as string) || ""}
-                          onValueChange={(value) => handleSingleChoiceAnswer(question.id, value)}
-                          className="flex flex-col space-y-2"
-                        >
-                          {question.options.map((option, idx) => (
-                            <div key={idx} className="flex items-center space-x-2">
-                              <RadioGroupItem value={option} id={`${question.id}-${idx}`} />
-                              <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      ) : (
-                        <div className="space-y-2">
-                          {question.options.map((option, idx) => (
-                            <div key={idx} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${question.id}-${idx}`}
-                                checked={isOptionSelected(question.id, option)}
-                                onCheckedChange={(checked) => 
-                                  handleMultipleChoiceAnswer(question.id, option, checked === true)
-                                }
-                              />
-                              <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+              {questions.map((question) => {
+                const options = question.options ?? [];
+                const required = question.required ?? true;
+                return (
+                  <div key={question.id} className="space-y-3 border-b pb-6">
+                    <div className="flex items-center">
+                      <Label className="text-base font-medium">
+                        {question.question_text}
+                        {required && <span className="text-red-500 ml-1">*</span>}
+                      </Label>
                     </div>
-                  )}
-                </div>
-              ))}
+                    
+                    {question.question_type === "text" && (
+                      <Textarea
+                        placeholder="Your answer"
+                        value={(answers[question.id]?.answer as string) || ""}
+                        onChange={(e) => handleTextAnswer(question.id, e.target.value)}
+                        className="w-full"
+                      />
+                    )}
+                    
+                    {question.question_type === "multiple_choice" && options && (
+                      <div className="space-y-3">
+                        {options.length <= 4 ? (
+                          <RadioGroup
+                            value={(answers[question.id]?.answer as string) || ""}
+                            onValueChange={(value) => handleSingleChoiceAnswer(question.id, value)}
+                            className="flex flex-col space-y-2"
+                          >
+                            {options.map((option, idx) => (
+                              <div key={idx} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`${question.id}-${idx}`} />
+                                <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        ) : (
+                          <div className="space-y-2">
+                            {options.map((option, idx) => (
+                              <div key={idx} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`${question.id}-${idx}`}
+                                  checked={isOptionSelected(question.id, option)}
+                                  onCheckedChange={(checked) => 
+                                    handleMultipleChoiceAnswer(question.id, option, checked === true)
+                                  }
+                                />
+                                <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

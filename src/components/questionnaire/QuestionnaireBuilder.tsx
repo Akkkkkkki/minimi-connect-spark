@@ -18,7 +18,7 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, MoveUp, MoveDown, Edit, Save } from "lucide-react";
-import { Questionnaire, QuestionnaireContent, ActivityQuestionnaire } from "@/utils/supabaseTypes";
+import { QuestionnaireContent, ActivityQuestionnaire } from "@/utils/supabaseTypes";
 
 const QuestionnaireBuilder = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -27,10 +27,10 @@ const QuestionnaireBuilder = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
+  const [questionnaire, setQuestionnaire] = useState<any | null>(null);
   const [questions, setQuestions] = useState<QuestionnaireContent[]>([]);
   const [activity, setActivity] = useState<any | null>(null);
-  
+
   const [newQuestion, setNewQuestion] = useState<Partial<QuestionnaireContent>>({
     question_text: "",
     question_type: "text",
@@ -44,22 +44,31 @@ const QuestionnaireBuilder = () => {
       if (!activityId) return;
       setLoading(true);
       try {
+        // Fetch activity info for title/description
+        const { data: activityData, error: activityError } = await supabase
+          .from("activity")
+          .select("*")
+          .eq("id", activityId)
+          .single();
+        if (activityError) throw activityError;
+        setActivity(activityData);
+        // Fetch activity_questionnaire to get questionnaire_id
         const { data: aqData, error: aqError } = await supabase
           .from("activity_questionnaire")
-          .select("*, questionnaire:questionnaire_id(*)")
+          .select("*")
           .eq("activity_id", activityId)
           .maybeSingle();
         if (aqError) throw aqError;
-        if (!aqData || !aqData.questionnaire) {
+        if (!aqData) {
           setQuestionnaire(null);
           setQuestions([]);
         } else {
-          setQuestionnaire(aqData.questionnaire);
-          // Fetch questions for this questionnaire
+          setQuestionnaire(aqData);
+          // Fetch questions for this questionnaire_id
           const { data: questionsData, error: questionsError } = await supabase
             .from("questionnaire_content")
             .select("*")
-            .eq("questionnaire_id", aqData.questionnaire.id)
+            .eq("questionnaire_id", aqData.questionnaire_id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
           setQuestions(questionsData || []);
@@ -123,7 +132,7 @@ const QuestionnaireBuilder = () => {
     }
     const newQuestionComplete: QuestionnaireContent = {
       id: `q${Date.now()}`,
-      questionnaire_id: questionnaire?.id || '',
+      questionnaire_id: questionnaire?.questionnaire_id || '',
       question_text: newQuestion.question_text!,
       question_type: newQuestion.question_type || "text",
       required: newQuestion.required ?? true,
@@ -150,7 +159,8 @@ const QuestionnaireBuilder = () => {
     const question = questions[index];
     setNewQuestion({
       ...question,
-      options: question.options || [""]
+      options: question.options ?? [""],
+      required: question.required ?? true
     });
     setEditingQuestionIndex(index);
   };
@@ -244,8 +254,8 @@ const QuestionnaireBuilder = () => {
               <Label htmlFor="title">Questionnaire Title</Label>
               <Input
                 id="title"
-                value={questionnaire?.title}
-                onChange={(e) => setQuestionnaire({...questionnaire, title: e.target.value})}
+                value={activity?.title || ""}
+                disabled
                 className="w-full"
               />
             </div>
@@ -254,8 +264,8 @@ const QuestionnaireBuilder = () => {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={questionnaire?.description || ""}
-                onChange={(e) => setQuestionnaire({...questionnaire, description: e.target.value})}
+                value={activity?.description || ""}
+                disabled
                 className="w-full"
               />
             </div>
@@ -270,71 +280,73 @@ const QuestionnaireBuilder = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {questions.map((question, index) => (
-                  <Card key={question.id} className="relative">
-                    <div className="absolute left-2 top-4 flex flex-col gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveQuestion(index, 'up')}
-                        disabled={index === 0}
-                        className="h-6 w-6"
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <GripVertical className="h-4 w-4 mx-auto text-muted-foreground" />
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveQuestion(index, 'down')}
-                        disabled={index === questions.length - 1}
-                        className="h-6 w-6"
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <CardContent className="pt-4 pl-10">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium">{question.question_text}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Type: {question.question_type === 'multiple_choice' ? 'Multiple Choice' : 'Text'} | 
-                            {question.required ? ' Required' : ' Optional'}
-                          </p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => editQuestion(index)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => deleteQuestion(index)}
-                            className="text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                {questions.map((question, index) => {
+                  const options = question.options ?? [];
+                  const required = question.required ?? true;
+                  return (
+                    <Card key={question.id} className="relative">
+                      <div className="absolute left-2 top-4 flex flex-col gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => moveQuestion(index, 'up')}
+                          disabled={index === 0}
+                          className="h-6 w-6"
+                        >
+                          <MoveUp className="h-4 w-4" />
+                        </Button>
+                        <GripVertical className="h-4 w-4 mx-auto text-muted-foreground" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => moveQuestion(index, 'down')}
+                          disabled={index === questions.length - 1}
+                          className="h-6 w-6"
+                        >
+                          <MoveDown className="h-4 w-4" />
+                        </Button>
                       </div>
-                      
-                      {question.question_type === 'multiple_choice' && question.options && (
-                        <div className="mt-2 pl-4">
-                          <p className="text-sm font-medium mb-1">Options:</p>
-                          <ul className="list-disc pl-5 text-sm">
-                            {question.options.map((option, i) => (
-                              <li key={i}>{option}</li>
-                            ))}
-                          </ul>
+                      <CardContent className="pt-4 pl-10">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium">{question.question_text}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Type: {question.question_type === 'multiple_choice' ? 'Multiple Choice' : 'Text'} | 
+                              {required ? ' Required' : ' Optional'}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => editQuestion(index)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => deleteQuestion(index)}
+                              className="text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        {question.question_type === 'multiple_choice' && options.length > 0 && (
+                          <div className="mt-2 pl-4">
+                            <p className="text-sm font-medium mb-1">Options:</p>
+                            <ul className="list-disc pl-5 text-sm">
+                              {options.map((option, i) => (
+                                <li key={i}>{option}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
 
