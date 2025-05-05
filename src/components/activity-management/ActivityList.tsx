@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Edit, MapPin, MoreVertical, Settings, Trash, Users } from "lucide-react";
@@ -37,28 +36,23 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
         
         // Get activities created by this user
         const { data, error } = await supabase
-          .from('activities')
-          .select(`
-            *,
-            questionnaires (
-              id
-            ),
-            activity_participants (
-              id
-            )
-          `)
+          .from('activity')
+          .select(`*, activity_questionnaire (id, questionnaire_id), activity_participants (id)`)
           .eq('creator_id', user.id);
           
         if (error) throw error;
         
         if (data) {
           // Process and format activity data
-          const processedActivities = data.map(activity => ({
-            ...activity,
-            status: new Date(activity.start_time) > new Date() ? "upcoming" : "completed",
-            participants: activity.activity_participants ? activity.activity_participants.length : 0,
-            hasQuestionnaire: activity.questionnaires && activity.questionnaires.length > 0
-          }));
+          const processedActivities = data.map(activity => {
+            const hasQuestionnaire = activity.activity_questionnaire && activity.activity_questionnaire.length > 0;
+            return {
+              ...activity,
+              status: new Date(activity.start_time) > new Date() ? "upcoming" : "completed",
+              participants: activity.activity_participants ? activity.activity_participants.length : 0,
+              hasQuestionnaire
+            };
+          });
           
           setActivities(processedActivities);
         }

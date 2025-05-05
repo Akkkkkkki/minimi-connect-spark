@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,7 +39,7 @@ const ActivityManagement = () => {
             <div className="flex items-center">
               <Button variant="ghost" onClick={handleBackToList} className="mr-2">
                 <ArrowLeft size={16} className="mr-2" />
-                Back to Activities
+                Back to All Activities
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-primary">Activity Details</h1>
             </div>

@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -7,7 +6,7 @@ import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/context/AuthContext";
-import ActivitiesPage from "@/pages/ActivitiesPage";
+import AllActivitiesPage from "@/pages/ActivitiesPage";
 import ActivityDetailsPage from "@/pages/ActivityDetailsPage";
 import ProfileDashboard from "@/pages/ProfileDashboard";
 import MyActivitiesPage from "@/pages/MyActivitiesPage";
@@ -53,7 +52,7 @@ function App() {
               } />
               <Route path="/activities" element={
                 <RequireProfileCompletion>
-                  <ActivitiesPage />
+                  <AllActivitiesPage />
                 </RequireProfileCompletion>
               } />
               <Route path="/activities/:activityId" element={

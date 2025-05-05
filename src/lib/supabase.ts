@@ -1,16 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+// Import the Supabase client from the integrations directory
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { getEnv } from './env';
 
 // Initialize the Supabase client
 const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = getEnv();
-
-export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
 
 // Auth helper functions
 export const signInWithEmail = async (email: string, password: string) => {
@@ -37,12 +31,7 @@ export const signUpWithEmail = async (
   password: string, 
   userData: { first_name: string; last_name: string; gender: string; birth_month: string; birth_year: string }
 ) => {
-  console.log('Starting signup process with email:', email);
-  
   try {
-    // We can't check if the email exists with the anon key, so we'll just attempt the signup
-    console.log('Calling Supabase auth.signUp...');
-    // Basic signup without any metadata to avoid potential issues
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -50,29 +39,13 @@ export const signUpWithEmail = async (
     
     if (error) {
       console.error('Auth sign up error:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      
-      // If we get the specific database error, give a more helpful message
-      if (error.message === 'Database error updating user') {
-        toast.error('There was a problem creating your account. Please try using a different email address.');
-      } else {
-        toast.error(error.message);
-      }
-      
+      toast.error(error.message);
       return { user: null, session: null, error };
     }
     
-    console.log('Auth sign up successful, user:', data.user?.id);
-    
-    // Return the user data even without adding profile - we can handle that on the client side
-    return { 
-      user: data.user, 
-      session: data.session, 
-      error: null 
-    };
+    return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
     console.error('Signup error:', err);
-    console.error('Error details:', err.stack || JSON.stringify(err, null, 2));
     toast.error(err.message || 'An error occurred during sign up');
     return { user: null, session: null, error: err };
   }
@@ -90,36 +63,20 @@ export const createUserProfile = async (
   }
 ) => {
   try {
-    // Convert string values to proper types if they're not already
-    const birthMonth = typeof profileData.birth_month === 'string' 
-      ? parseInt(profileData.birth_month) 
-      : profileData.birth_month;
-      
-    const birthYear = typeof profileData.birth_year === 'string' 
-      ? parseInt(profileData.birth_year) 
-      : profileData.birth_year;
-      
-    const profile = {
-      id: userId,
-      first_name: profileData.first_name,
-      last_name: profileData.last_name,
-      gender: profileData.gender.toLowerCase(),
-      birth_month: birthMonth,
-      birth_year: birthYear,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      deleted: false
-    };
-    
     const { error } = await supabase
       .from('profile')
-      .insert([profile]);
+      .insert([{
+        id: userId,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        gender: profileData.gender,
+        birth_month: profileData.birth_month,
+        birth_year: profileData.birth_year,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }]);
       
-    if (error) {
-      console.error('Error creating profile:', error);
-      throw error;
-    }
-    
+    if (error) throw error;
     return { success: true, error: null };
   } catch (err: any) {
     console.error('Profile creation error:', err);

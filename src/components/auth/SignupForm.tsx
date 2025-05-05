@@ -22,6 +22,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { createUserProfile, signUpWithEmail } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
 const signupSchema = z.object({

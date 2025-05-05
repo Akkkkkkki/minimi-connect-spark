@@ -3,9 +3,11 @@ import { getEnv } from '@/lib/env';
 
 const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = getEnv();
 
-export const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
+const supabaseClient = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
   },
 });
+
+export const supabase = supabaseClient;

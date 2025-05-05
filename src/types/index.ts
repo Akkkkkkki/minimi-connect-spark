@@ -1,4 +1,3 @@
-
 // User & Profile Types
 export interface User {
   id: string;
@@ -44,6 +43,7 @@ export interface Question {
   type: QuestionType;
   options?: string[];
   required: boolean;
+  order: number;
 }
 
 export interface Questionnaire {
@@ -67,7 +67,6 @@ export interface ActivityParticipant {
   id: string;
   activityId: string;
   profileId: string;
-  answers: Record<string, QuestionnaireResponse>;
   status: ParticipantStatus;
   createdAt: string;
   updatedAt: string;

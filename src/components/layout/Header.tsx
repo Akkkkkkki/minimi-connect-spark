@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/context/AuthContext";
 import { signOut } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ const Header = () => {
 
   const navItems = [
     { label: "Home", path: "/" },
-    { label: "Activities", path: "/activities" },
+    { label: "All Activities", path: "/activities" },
     { label: "How It Works", path: "/how-it-works" }
   ];
 

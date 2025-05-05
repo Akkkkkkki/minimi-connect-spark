@@ -1,7 +1,7 @@
-
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, getCurrentUser, getCurrentSession } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { getCurrentUser, getCurrentSession } from '@/lib/supabase';
 import { Navigate, useLocation } from 'react-router-dom';
 
 interface AuthContextProps {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PageLayout from "@/components/layout/PageLayout";
@@ -23,33 +22,34 @@ const ActivityDetailsPage = () => {
       if (!activityId) return;
       
       setLoading(true);
+      console.log('Checking activity with ID:', activityId);
       
       try {
         // Check if activity exists
         const { data: activity, error: activityError } = await supabase
-          .from('activities')
+          .from('activity')
           .select('*')
-          .eq('id', activityId)
+          .eq('id', parseInt(activityId))
           .single();
           
-        if (activityError || !activity) {
+        if (activityError) {
+          console.error('Activity check error:', activityError);
           setActivityExists(false);
           setLoading(false);
-          // Redirect back to activities page after a short delay
           toast.error("Activity not found");
           setTimeout(() => navigate('/activities'), 1500);
           return;
         }
         
+        console.log('Activity found:', activity);
         setActivityExists(true);
         
         // Check if questionnaire exists for this activity
-        const { data: questionnaire, error: questionnaireError } = await supabase
-          .from('questionnaires')
+        const { data: aqData, error: aqError } = await supabase
+          .from('activity_questionnaire')
           .select('*')
           .eq('activity_id', activityId);
-          
-        setHasQuestionnaire(questionnaire && questionnaire.length > 0);
+        setHasQuestionnaire(aqData && aqData.length > 0);
       } catch (error) {
         console.error("Error checking activity:", error);
         toast.error("Failed to load activity data");
@@ -96,14 +96,14 @@ const ActivityDetailsPage = () => {
         <div className="space-y-4">
           <Button variant="ghost" className="flex items-center gap-2" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4" />
-            Back to Activities
+            Back to All Activities
           </Button>
           
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">Activity not found</p>
               <Button className="mt-4" onClick={handleBack}>
-                Browse Activities
+                Browse All Activities
               </Button>
             </CardContent>
           </Card>
@@ -117,22 +117,10 @@ const ActivityDetailsPage = () => {
       <div className="space-y-6">
         <Button variant="ghost" className="flex items-center gap-2" onClick={handleBack}>
           <ArrowLeft className="h-4 w-4" />
-          Back to Activities
+          Back to All Activities
         </Button>
         
         <ActivityDetails activityId={activityId} />
-        
-        <div className="flex justify-center mt-8">
-          {hasQuestionnaire ? (
-            <Button size="lg" onClick={handleJoin}>
-              Join This Activity
-            </Button>
-          ) : (
-            <Button size="lg" variant="outline" disabled>
-              Questionnaire not available yet
-            </Button>
-          )}
-        </div>
       </div>
     </PageLayout>
   );

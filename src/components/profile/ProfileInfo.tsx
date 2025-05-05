@@ -143,21 +143,38 @@ const ProfileInfo = () => {
     if (!user) return;
     
     try {
+      // Create an update object with only the changed fields
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Only add fields that have changed
+      if (values.firstName !== profileData?.firstName) updateData.first_name = values.firstName;
+      if (values.lastName !== profileData?.lastName) updateData.last_name = values.lastName;
+      if (values.birthMonth !== profileData?.birthMonth) updateData.birth_month = values.birthMonth ? parseInt(values.birthMonth) : null;
+      if (values.birthYear !== profileData?.birthYear) updateData.birth_year = values.birthYear ? parseInt(values.birthYear) : null;
+      if (values.city !== profileData?.city) updateData.city = values.city;
+      if (values.country !== profileData?.country) updateData.country = values.country;
+      if (values.bio !== profileData?.bio) updateData.bio = values.bio;
+
+      console.log('Updating profile with data:', updateData);
+      console.log('Current profile data:', profileData);
+      console.log('Form values:', values);
+
       const { error } = await supabase
         .from('profile')
-        .update({
-          first_name: values.firstName,
-          last_name: values.lastName,
-          birth_month: parseInt(values.birthMonth),
-          birth_year: parseInt(values.birthYear),
-          city: values.city,
-          country: values.country,
-          bio: values.bio,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', user.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
       
       toast.success("Profile updated successfully!");
     } catch (error: any) {

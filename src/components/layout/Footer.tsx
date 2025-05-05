@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 
@@ -19,7 +18,7 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Explore</h3>
             <ul className="space-y-2">
-              <li><Link to="/activities" className="text-gray-300 hover:text-accent transition-colors">Browse Activities</Link></li>
+              <li><Link to="/activities" className="text-gray-300 hover:text-accent transition-colors">Browse All Activities</Link></li>
               <li><Link to="/how-it-works" className="text-gray-300 hover:text-accent transition-colors">How It Works</Link></li>
               <li><Link to="/success-stories" className="text-gray-300 hover:text-accent transition-colors">Success Stories</Link></li>
             </ul>

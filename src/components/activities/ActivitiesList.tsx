@@ -4,36 +4,39 @@ import ActivityFilters from "./ActivityFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/context/AuthContext";
 
 const ActivitiesList = () => {
   const [activities, setActivities] = useState<ActivityCardProps[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivityCardProps[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [joinedActivityIds, setJoinedActivityIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        
+        // Fetch all activities with participants
         const { data, error } = await supabase
           .from('activity')
-          .select(`
-            *,
-            activity_participant (
-              id
-            )
-          `)
+          .select(`*, activity_participant (id, profile_id)`)
           .order('start_time', { ascending: true });
-          
-        if (error) {
-          throw error;
+        if (error) throw error;
+        let joinedIds = new Set<string>();
+        if (isAuthenticated && user) {
+          // Find which activities the user has joined
+          data.forEach((activity: any) => {
+            if (activity.activity_participant?.some((p: any) => p.profile_id === user.id)) {
+              joinedIds.add(activity.id.toString());
+            }
+          });
         }
-        
+        setJoinedActivityIds(joinedIds);
         if (data) {
           const processedActivities: ActivityCardProps[] = data.map(activity => {
-            // Limit tags to 5
             const limitedTags = (activity.tags || []).slice(0, 5);
-            
+            const status = new Date(activity.start_time) > new Date() ? 'upcoming' : 'completed';
             return {
               id: activity.id.toString(),
               title: activity.title,
@@ -41,14 +44,15 @@ const ActivitiesList = () => {
               location: activity.location,
               date: new Date(activity.start_time).toLocaleDateString(),
               time: new Date(activity.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-              participants: { 
-                current: activity.activity_participant?.length || 0, 
-                max: 30 
+              participants: {
+                current: activity.activity_participant?.length || 0,
+                max: 30
               },
               tags: limitedTags,
+              isParticipant: joinedIds.has(activity.id.toString()),
+              status,
             };
           });
-          
           setActivities(processedActivities);
           setFilteredActivities(processedActivities);
         }
@@ -59,9 +63,10 @@ const ActivitiesList = () => {
         setLoading(false);
       }
     };
-    
-    fetchActivities();
-  }, []);
+    if (!isLoading) {
+      fetchActivities();
+    }
+  }, [isAuthenticated, user, isLoading]);
 
   const handleSearch = (query: string) => {
     if (!query) {
@@ -163,7 +168,7 @@ const ActivitiesList = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredActivities.map((activity) => (
-            <ActivityCard key={activity.id} {...activity} />
+            <ActivityCard key={activity.id} {...activity} isParticipant={activity.isParticipant} status={activity.status} />
           ))}
         </div>
       )}

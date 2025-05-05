@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -83,7 +82,7 @@ const CreateActivity = () => {
       
       // Insert the activity into Supabase
       const { data, error } = await supabase
-        .from('activities')
+        .from('activity')
         .insert({
           creator_id: user.id,
           title: values.title,

@@ -1,4 +1,3 @@
-
 import PageLayout from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -55,7 +54,7 @@ const HowItWorksPage = () => {
               </div>
             </div>
             <div className="md:w-2/3">
-              <h2 className="text-2xl font-semibold mb-3 text-primary">2. Browse & Join Activities</h2>
+              <h2 className="text-2xl font-semibold mb-3 text-primary">2. Browse & Join All Activities</h2>
               <p className="text-gray-600">
                 Explore our catalog of activities and events. Filter by type, location, date, or interests to find activities 
                 that appeal to you. When you find something interesting, join to be included in the matching process.
@@ -158,7 +157,7 @@ const HowItWorksPage = () => {
             </Link>
             <Link to="/activities">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Browse Activities
+                Browse All Activities
               </Button>
             </Link>
           </div>

@@ -1,4 +1,3 @@
-
 // Types for supabase tables
 export interface Activity {
   id: string;
@@ -14,28 +13,26 @@ export interface Activity {
   updated_at: string;
 }
 
-export interface Questionnaire {
+export interface ActivityQuestionnaire {
   id: string;
   activity_id: string;
-  title: string;
-  description?: string;
-  questions: Question[];
-  created_at?: string;
+  questionnaire_id: string;
 }
 
-export interface Question {
+export interface QuestionnaireContent {
   id: string;
-  text: string;
-  type: "multiple_choice" | "text";
+  questionnaire_id: string;
+  question_text: string;
+  question_type: "multiple_choice" | "text";
   options?: string[];
-  required: boolean;
+  required?: boolean;
+  order: number;
 }
 
 export interface ActivityParticipant {
   id: string;
   activity_id: string;
   profile_id: string;
-  answers: Record<string, { answer: string | string[] }>;
   status: string;
   created_at: string;
   updated_at?: string;
@@ -80,11 +77,6 @@ export interface Database {
         Row: Activity;
         Insert: Omit<Activity, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Activity, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      questionnaires: {
-        Row: Questionnaire;
-        Insert: Omit<Questionnaire, 'id' | 'created_at'>;
-        Update: Partial<Omit<Questionnaire, 'id' | 'created_at'>>;
       };
       activity_participants: {
         Row: ActivityParticipant;
