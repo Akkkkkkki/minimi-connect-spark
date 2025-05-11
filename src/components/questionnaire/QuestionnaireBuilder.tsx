@@ -46,7 +46,7 @@ const QuestionnaireBuilder = () => {
       try {
         // Fetch activity info for title/description
         const { data: activityData, error: activityError } = await supabase
-          .from("activity")
+          .from('activity')
           .select("*")
           .eq("id", activityId)
           .single();
@@ -54,7 +54,7 @@ const QuestionnaireBuilder = () => {
         setActivity(activityData);
         // Fetch activity_questionnaire to get questionnaire_id
         const { data: aqData, error: aqError } = await supabase
-          .from("activity_questionnaire")
+          .from('activity_questionnaire')
           .select("*")
           .eq("activity_id", activityId)
           .maybeSingle();
@@ -66,7 +66,7 @@ const QuestionnaireBuilder = () => {
           setQuestionnaire(aqData);
           // Fetch questions for this questionnaire_id
           const { data: questionsData, error: questionsError } = await supabase
-            .from("questionnaire_content")
+            .from('questionnaire_content')
             .select("*")
             .eq("questionnaire_id", aqData.questionnaire_id)
             .order("order", { ascending: true });

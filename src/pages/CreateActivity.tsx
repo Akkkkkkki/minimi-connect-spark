@@ -31,16 +31,21 @@ const activitySchema = z.object({
   location: z.string().min(3, {
     message: "Location is required.",
   }),
+  city: z.string().min(2, { message: "City is required." }),
+  country: z.string().min(2, { message: "Country is required." }),
   startDate: z.string().min(1, {
     message: "Start date is required.",
   }),
   startTime: z.string().min(1, {
     message: "Start time is required.",
   }),
+  endDate: z.string().optional(),
+  endTime: z.string().optional(),
   activityType: z.string().min(1, {
     message: "Activity type is required.",
   }),
   tags: z.string().optional(),
+  maxParticipants: z.coerce.number().min(2, { message: "At least 2 participants." }).optional(),
 });
 
 type ActivityFormValues = z.infer<typeof activitySchema>;
@@ -56,10 +61,15 @@ const CreateActivity = () => {
       title: "",
       description: "",
       location: "",
+      city: "",
+      country: "",
       startDate: "",
       startTime: "",
+      endDate: "",
+      endTime: "",
       activityType: "social",
       tags: "",
+      maxParticipants: 30,
     },
   });
 
@@ -72,15 +82,12 @@ const CreateActivity = () => {
     setIsSubmitting(true);
     
     try {
-      // Format the date and time into a single datetime string
       const startDateTime = new Date(`${values.startDate}T${values.startTime}`);
-      
-      // Process tags if provided
-      const tagsList = values.tags 
-        ? values.tags.split(',').map(tag => tag.trim()) 
-        : [];
-      
-      // Insert the activity into Supabase
+      let endDateTime = null;
+      if (values.endDate && values.endTime) {
+        endDateTime = new Date(`${values.endDate}T${values.endTime}`);
+      }
+      const tagsList = values.tags ? values.tags.split(',').map(tag => tag.trim()) : [];
       const { data, error } = await supabase
         .from('activity')
         .insert({
@@ -88,9 +95,13 @@ const CreateActivity = () => {
           title: values.title,
           description: values.description,
           location: values.location,
+          city: values.city,
+          country: values.country,
           start_time: startDateTime.toISOString(),
+          end_time: endDateTime ? endDateTime.toISOString() : null,
           activity_type: values.activityType,
-          tags: tagsList
+          tags: tagsList,
+          max_participants: values.maxParticipants,
         })
         .select('id')
         .single();
@@ -98,8 +109,7 @@ const CreateActivity = () => {
       if (error) throw error;
       
       toast.success("Activity created successfully!");
-      // Navigate to the questionnaire builder for this activity
-      navigate(`/activity/${data.id}/questionnaire`);
+      navigate("/activity-management");
     } catch (error) {
       console.error("Error creating activity:", error);
       toast.error("Failed to create activity", {
@@ -202,6 +212,35 @@ const CreateActivity = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., New York" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., USA" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
                     name="startDate"
                     render={({ field }) => (
                       <FormItem>
@@ -228,6 +267,53 @@ const CreateActivity = () => {
                     )}
                   />
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="maxParticipants"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Participants</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={2} {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Maximum number of participants allowed (default: 30)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}

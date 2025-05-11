@@ -45,7 +45,7 @@ export class MatchRoundService {
 
   async getParticipants(activityId: string): Promise<ActivityParticipant[]> {
     const { data, error } = await supabase
-      .from('activity_participants')
+      .from('activity_participant')
       .select('*')
       .eq('activity_id', activityId)
       .eq('status', 'completed');

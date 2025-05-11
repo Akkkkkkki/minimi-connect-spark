@@ -41,9 +41,7 @@ interface Match {
 const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=32";
 function getValidAvatarUrl(avatar?: string | null): string {
   if (!avatar || typeof avatar !== "string" || avatar.trim() === "") return DEFAULT_AVATAR;
-  // Accept http(s) URLs
   if (/^https?:\/\//.test(avatar)) return avatar;
-  // If it's a relative path, prepend your Supabase Storage base URL (example below)
   return `https://uiswjpjgxsrnfxerzbrw.supabase.co/storage/v1/object/public/user/profile/${avatar}`;
 }
 

@@ -83,7 +83,7 @@ export interface Database {
         Insert: Omit<Activity, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Activity, 'id' | 'created_at' | 'updated_at'>>;
       };
-      activity_participants: {
+      activity_participant: {
         Row: ActivityParticipant;
         Insert: Omit<ActivityParticipant, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<ActivityParticipant, 'id' | 'created_at' | 'updated_at'>>;

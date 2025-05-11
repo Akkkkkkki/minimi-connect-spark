@@ -43,7 +43,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         console.log("[DEBUG] Fetching questionnaire for activityId:", activityId, "user:", user);
         // Fetch activity information
         const { data: activityData, error: activityError } = await supabase
-          .from("activity")
+          .from('activity')
           .select("*")
           .eq("id", Number(activityId))
           .single();
@@ -53,7 +53,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
 
         // Fetch questionnaire for this activity
         const { data: aqData, error: aqError } = await supabase
-          .from("activity_questionnaire")
+          .from('activity_questionnaire')
           .select("*")
           .eq("activity_id", Number(activityId))
           .maybeSingle();
@@ -65,7 +65,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           setQuestionnaire(aqData);
           // Fetch questions for this questionnaire_id
           const { data: questionsData, error: questionsError } = await supabase
-            .from("questionnaire_content")
+            .from('questionnaire_content')
             .select("*")
             .eq("questionnaire_id", aqData.questionnaire_id)
             .order("order", { ascending: true });
@@ -77,7 +77,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         if (isParticipant && user) {
           // Check if user has already filled in the questionnaire
           const { data: participationData, error: participationError } = await supabase
-            .from("activity_participant")
+            .from('activity_participant')
             .select("*")
             .eq("activity_id", Number(activityId))
             .eq("profile_id", user.id)
@@ -92,7 +92,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             console.log("[DEBUG] Found participationData:", participationData);
             // Fetch existing questionnaire responses
             const { data: responsesData, error: responsesError } = await supabase
-              .from("questionnaire_response")
+              .from('questionnaire_response')
               .select("*")
               .eq("participant_id", participationData.id);
 
@@ -208,7 +208,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         if (existingParticipation) {
           // Update existing participation - they've completed the questionnaire
           const { error: updateError } = await supabase
-            .from("activity_participant")
+            .from('activity_participant')
             .update({
               status: "completed",
               updated_at: new Date().toISOString()
@@ -222,7 +222,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         } else {
           // Create new participation - they've just joined and completed the questionnaire
           const { data: newParticipation, error: participationError } = await supabase
-            .from("activity_participant")
+            .from('activity_participant')
             .insert({
               activity_id: Number(activityId),
               profile_id: user.id,
@@ -246,7 +246,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         for (const question of questions) {
           // Check if a response already exists for this participant/question
           const { data: existingResponse, error: fetchError } = await supabase
-            .from("questionnaire_response")
+            .from('questionnaire_response')
             .select("id")
             .eq("participant_id", participantId)
             .eq("question_id", question.id)
@@ -258,7 +258,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           if (existingResponse && existingResponse.id) {
             // Update existing response
             const { error: updateResponseError } = await supabase
-              .from("questionnaire_response")
+              .from('questionnaire_response')
               .update({
                 answers: answers[question.id]?.answer || null,
                 updated_at: new Date().toISOString()
@@ -271,7 +271,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           } else {
             // Insert new response
             const { error: insertResponseError } = await supabase
-              .from("questionnaire_response")
+              .from('questionnaire_response')
               .insert({
                 participant_id: participantId,
                 question_id: question.id,

@@ -16,6 +16,7 @@ const ActivityManagement = () => {
   
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(activityIdParam);
   const { isAuthenticated } = useAuth();
+  const [activityTab, setActivityTab] = useState<string>("upcoming");
 
   const handleCreateActivity = () => {
     navigate("/create-activity");
@@ -69,7 +70,15 @@ const ActivityManagement = () => {
             </TabsContent>
           </Tabs>
         ) : (
-          <ActivityList onSelectActivity={handleSelectActivity} />
+          <>
+            <Tabs defaultValue={activityTab} className="w-full" onValueChange={setActivityTab}>
+              <TabsList className="w-full md:w-auto grid grid-cols-2 mb-4">
+                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <ActivityList onSelectActivity={handleSelectActivity} statusFilter={activityTab} />
+          </>
         )}
       </div>
     </PageLayout>

@@ -1,0 +1,84 @@
+# This is the SQL script to run in Supabase Table Editor directly
+# Do not use when tables are big - this uses cross join!
+
+
+/* -----------------------------------------------------------------
+   0.  prerequisite – only once per database
+   ----------------------------------------------------------------- */
+CREATE EXTENSION IF NOT EXISTS pgcrypto;        -- for gen_random_uuid() if you ever need it
+
+/* -----------------------------------------------------------------
+   1.  how many rows each profile already has
+   ----------------------------------------------------------------- */
+WITH profile_counts AS (
+    SELECT p.id                     AS profile_id,
+           COALESCE(COUNT(ap.*), 0) AS have_cnt
+    FROM   public.profile           AS p
+    LEFT   JOIN public.activity_participant ap
+           ON ap.profile_id = p.id
+    GROUP  BY p.id
+),
+
+/* -----------------------------------------------------------------
+   2.  decide a random target (2–4) for every profile
+   ----------------------------------------------------------------- */
+targets AS (
+    SELECT profile_id,
+           (2 + FLOOR(random()*3))::int AS target_cnt,   -- 2, 3 or 4
+           have_cnt
+    FROM   profile_counts
+),
+
+/* -----------------------------------------------------------------
+   3.  keep only those profiles that still need extra rows
+   ----------------------------------------------------------------- */
+need AS (
+    SELECT profile_id,
+           target_cnt - have_cnt AS rows_needed
+    FROM   targets
+    WHERE  target_cnt > have_cnt
+),
+
+/* -----------------------------------------------------------------
+   4.  build a shuffled list of candidate activity-profile pairs
+   ----------------------------------------------------------------- */
+candidate_pairs AS (
+    SELECT n.profile_id,
+           a.id            AS activity_id,
+           ROW_NUMBER() OVER (PARTITION BY n.profile_id ORDER BY random()) AS rn
+    FROM   need            AS n
+    CROSS  JOIN public.activity AS a
+    WHERE  NOT EXISTS (          -- skip pairs that are already present
+          SELECT 1
+          FROM   public.activity_participant ap
+          WHERE  ap.profile_id  = n.profile_id
+          AND    ap.activity_id = a.id
+    )
+),
+
+/* -----------------------------------------------------------------
+   5.  keep only as many rows per profile as we actually need
+   ----------------------------------------------------------------- */
+selected AS (
+    SELECT c.profile_id,
+           c.activity_id,
+           (ARRAY['pending','confirmed','completed'])
+               [FLOOR(random()*4)+1]                   AS status
+    FROM   candidate_pairs        AS c
+    JOIN   need                   AS n  USING (profile_id)
+    WHERE  c.rn <= n.rows_needed
+)
+
+/* -----------------------------------------------------------------
+   6.  INSERT!
+   ----------------------------------------------------------------- */
+INSERT INTO public.activity_participant
+        (activity_id,  profile_id,  status,
+         created_at,   updated_at,  version)
+SELECT  activity_id,
+        profile_id,
+        status,
+        NOW(), NOW(),
+        1
+FROM    selected
+ON CONFLICT (activity_id, profile_id) DO NOTHING;   -- safety net

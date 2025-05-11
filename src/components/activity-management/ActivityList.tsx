@@ -19,9 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface ActivityListProps {
   onSelectActivity: (id: string) => void;
+  statusFilter?: 'upcoming' | 'completed';
 }
 
-const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
+const ActivityList = ({ onSelectActivity, statusFilter = 'upcoming' }: ActivityListProps) => {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -37,7 +38,7 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
         // Get activities created by this user
         const { data, error } = await supabase
           .from('activity')
-          .select(`*, activity_questionnaire (id, questionnaire_id), activity_participants (id)`)
+          .select(`*, activity_questionnaire (id, questionnaire_id), activity_participant (id)`)
           .eq('creator_id', user.id);
           
         if (error) throw error;
@@ -46,10 +47,17 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
           // Process and format activity data
           const processedActivities = data.map(activity => {
             const hasQuestionnaire = activity.activity_questionnaire && activity.activity_questionnaire.length > 0;
+            const now = new Date();
+            let status = "upcoming";
+            if (activity.end_time) {
+              status = new Date(activity.end_time) <= now ? "completed" : "upcoming";
+            } else if (activity.start_time) {
+              status = new Date(activity.start_time) <= now ? "completed" : "upcoming";
+            }
             return {
               ...activity,
-              status: new Date(activity.start_time) > new Date() ? "upcoming" : "completed",
-              participants: activity.activity_participants ? activity.activity_participants.length : 0,
+              status,
+              participants: activity.activity_participant ? activity.activity_participant.length : 0,
               hasQuestionnaire
             };
           });
@@ -68,7 +76,7 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
   }, [user]);
 
   const handleEdit = (id: string) => {
-    toast.info("Edit functionality not implemented in demo");
+    navigate(`/edit-activity/${id}`);
   };
 
   const handleDelete = (id: string) => {
@@ -122,16 +130,35 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
     );
   }
 
+  // Filter activities by statusFilter
+  const filteredActivities = activities.filter(activity => activity.status === statusFilter);
+
+  if (filteredActivities.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6 text-center py-12">
+          <p className="text-muted-foreground">No {statusFilter} activities found.</p>
+          <Button 
+            className="mt-4" 
+            onClick={() => navigate("/create-activity")}
+          >
+            Create Activity
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {activities.map(activity => (
+      {filteredActivities.map(activity => (
         <Card key={activity.id} className="overflow-hidden">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-medium">{activity.title}</h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-row justify-between items-start gap-2">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-medium truncate">{activity.title}</h3>
                     {activity.status === "upcoming" ? (
                       <Badge>Upcoming</Badge>
                     ) : (
@@ -141,73 +168,52 @@ const ActivityList = ({ onSelectActivity }: ActivityListProps) => {
                       <Badge variant="secondary">Has Questionnaire</Badge>
                     )}
                   </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {new Date(activity.start_time).toLocaleDateString()} at {new Date(activity.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      {activity.location}
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Users className="h-4 w-4 mr-2" />
+                      {activity.participants} participants
+                    </div>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {activity.status === "upcoming" && (
                       <DropdownMenuItem onClick={() => handleEdit(activity.id)}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleManageMatches(activity.id)}>
-                        <Settings className="mr-2 h-4 w-4" /> Manage Matches
+                    )}
+                    <DropdownMenuItem onClick={() => handleManageMatches(activity.id)}>
+                      <Settings className="mr-2 h-4 w-4" /> Manage Matches
+                    </DropdownMenuItem>
+                    {activity.status === "upcoming" && (
+                      <DropdownMenuItem onClick={() => handleEditQuestionnaire(activity.id)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        {activity.hasQuestionnaire ? 'Edit' : 'Create'} Questionnaire
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleEditQuestionnaire(activity.id)}
-                      >
-                        <Edit className="mr-2 h-4 w-4" /> {activity.hasQuestionnaire ? 'Edit' : 'Create'} Questionnaire
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-red-600" 
-                        onClick={() => handleDelete(activity.id)}
-                      >
-                        <Trash className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {new Date(activity.start_time).toLocaleDateString()} at {new Date(activity.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {activity.location}
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="h-4 w-4 mr-2" />
-                    {activity.participants} participants
-                  </div>
-                </div>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(activity.id)}>
+                      <Trash className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" onClick={() => handleEdit(activity.id)}>
-                  <Edit className="h-4 w-4 mr-2" /> Edit
-                </Button>
-                <Button onClick={() => handleManageMatches(activity.id)}>
-                  Manage
-                </Button>
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t">
-              <Button
-                variant={activity.hasQuestionnaire ? "outline" : "default"}
-                onClick={() => handleEditQuestionnaire(activity.id)}
-                size="sm"
-              >
-                {activity.hasQuestionnaire ? "Edit Questionnaire" : "Create Questionnaire"}
-              </Button>
             </div>
           </CardContent>
         </Card>

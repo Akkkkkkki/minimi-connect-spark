@@ -1,4 +1,3 @@
-
 import PageLayout from "@/components/layout/PageLayout";
 import MatchList from "@/components/matches/MatchList";
 import { useEffect, useState } from "react";

@@ -55,7 +55,7 @@ export class VoteService {
   private async checkForMutualMatch(vote: Vote): Promise<void> {
     // Get the match details
     const { data: match, error: matchError } = await supabase
-      .from('matches')
+      .from('match')
       .select('*')
       .eq('id', vote.matchId)
       .single();

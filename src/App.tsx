@@ -20,6 +20,7 @@ import ParticipantQuestionnairePage from "./pages/ParticipantQuestionnairePage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import { useRequireProfileCompletion } from "@/hooks/useRequireProfileCompletion";
 import { Suspense } from "react";
+import EditActivity from "./pages/EditActivity";
 
 function RequireProfileCompletion({ children }: { children: React.ReactNode }) {
   const { profileChecked } = useRequireProfileCompletion();
@@ -80,6 +81,7 @@ function App() {
                   <CreateActivity />
                 </RequireProfileCompletion>
               } />
+              <Route path="/edit-activity/:id" element={<EditActivity />} />
               <Route path="/activity-management" element={
                 <RequireProfileCompletion>
                   <ActivityManagement />
