@@ -37,6 +37,7 @@ docs/*
 !docs/supabase/schema.sql
 !docs/supabase/config.toml
 !docs/supabase/migrations
+prior_version/
 
 # Supabase temporary files
 **/.temp/
