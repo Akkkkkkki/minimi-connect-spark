@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import type { MatchRound, Activity, ActivityParticipant } from '@/utils/supabaseTypes';
 import { MatchingService } from './index';
 

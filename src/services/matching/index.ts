@@ -1,12 +1,7 @@
 import { OpenAI } from 'openai';
 import type { MatchingOptions, MatchingResult, UserProfile, MatchResult, ActivityQuestionnaire, Candidate } from './types';
 import { MATCHING_PROMPTS } from './constants';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '@/integrations/supabase/client';
 
 // Configuration from environment variables
 const OPENAI_CONFIG = {
