@@ -39,6 +39,13 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
+const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=32";
+function getValidAvatarUrl(avatar?: string | null): string {
+  if (!avatar || typeof avatar !== "string" || avatar.trim() === "") return DEFAULT_AVATAR;
+  if (/^https?:\/\//.test(avatar)) return avatar;
+  return `https://uiswjpjgxsrnfxerzbrw.supabase.co/storage/v1/object/public/user/profile/${avatar}`;
+}
+
 const ProfileInfo = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -220,7 +227,7 @@ const ProfileInfo = () => {
           <div className="flex flex-col items-center space-y-3">
             <div className="relative">
               <img 
-                src={avatarUrl || "https://i.pravatar.cc/150?img=32"} 
+                src={getValidAvatarUrl(avatarUrl)}
                 alt="Profile" 
                 className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md" 
               />

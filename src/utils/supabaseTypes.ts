@@ -49,24 +49,29 @@ export interface Profile {
 }
 
 export interface Match {
-  id: string;
-  round_id: string;
+  id: number;
+  round_id: number;
   profile_id_1: string;
   profile_id_2: string;
   match_score: number;
   match_reason: string;
   icebreaker: string;
   created_at: string;
+  profile_1_vote: 'up' | 'down' | 'none';
+  profile_2_vote: 'up' | 'down' | 'none';
+  is_mutual_match: boolean;
+  last_vote_update: string;
 }
 
 export interface MatchRound {
-  id: string;
-  activity_id: string;
+  id: number;
+  activity_id: number;
+  trigger_time: number;
+  trigger_type: string;
   name: string;
-  scheduled_time: string;
-  status: string;
+  status: 'pending' | 'completed' | 'failed';
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
 }
 
 // Define Supabase database interface

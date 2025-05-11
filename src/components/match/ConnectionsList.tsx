@@ -38,6 +38,15 @@ interface Match {
   hasResponded: boolean;
 }
 
+const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=32";
+function getValidAvatarUrl(avatar?: string | null): string {
+  if (!avatar || typeof avatar !== "string" || avatar.trim() === "") return DEFAULT_AVATAR;
+  // Accept http(s) URLs
+  if (/^https?:\/\//.test(avatar)) return avatar;
+  // If it's a relative path, prepend your Supabase Storage base URL (example below)
+  return `https://uiswjpjgxsrnfxerzbrw.supabase.co/storage/v1/object/public/user/profile/${avatar}`;
+}
+
 const MatchesList = ({ activityId }: MatchesListProps) => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
@@ -194,11 +203,8 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
-                {match.avatar ? (
-                  <AvatarImage src={match.avatar} alt={match.name} />
-                ) : (
-                  <AvatarFallback>{match.name.charAt(0)}</AvatarFallback>
-                )}
+                <AvatarImage src={getValidAvatarUrl(match.avatar)} alt={match.name} />
+                <AvatarFallback>{match.name.charAt(0)}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1">
