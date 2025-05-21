@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface MatchListProps {
   activityId?: string;
+  historyMode?: boolean;
 }
 
 interface Profile {
@@ -41,8 +42,10 @@ interface RoundData {
 interface MatchData {
   id: number;
   match_score: number;
-  match_reason: string | null;
-  icebreaker: string | null;
+  match_reason_1: string | null;
+  match_reason_2: string | null;
+  icebreaker_1: string | null;
+  icebreaker_2: string | null;
   created_at: string;
   round: RoundData;
   profile: Profile;
@@ -64,7 +67,7 @@ interface ProcessedMatch {
   shouldShow: boolean;
 }
 
-const MatchList = ({ activityId }: MatchListProps) => {
+const MatchList = ({ activityId, historyMode }: MatchListProps) => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<ProcessedMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,8 +103,10 @@ const MatchList = ({ activityId }: MatchListProps) => {
           .select(`
             id,
             match_score,
-            match_reason,
-            icebreaker,
+            match_reason_1,
+            match_reason_2,
+            icebreaker_1,
+            icebreaker_2,
             created_at,
             round_id,
             profile_id_1,
@@ -200,6 +205,17 @@ const MatchList = ({ activityId }: MatchListProps) => {
           
           if (activityId && !shouldShow) continue; // Skip non-mutual matches in activity view
           
+          // Determine which reason/icebreaker to show
+          let matchReason = '';
+          let icebreaker = '';
+          if (match.profile_id_1 === user.id) {
+            matchReason = match.match_reason_1 || 'You seem to be compatible based on your answers.';
+            icebreaker = match.icebreaker_1 || 'What brings you to this activity?';
+          } else {
+            matchReason = match.match_reason_2 || 'You seem to be compatible based on your answers.';
+            icebreaker = match.icebreaker_2 || 'What brings you to this activity?';
+          }
+          
           const processedMatch: ProcessedMatch = {
             id: match.id.toString(),
             name: `${otherUserProfile.first_name || ''} ${otherUserProfile.last_name || ''}`.trim() || 'User',
@@ -207,8 +223,8 @@ const MatchList = ({ activityId }: MatchListProps) => {
             activityId: activity.id.toString(),
             matchDate: new Date(match.created_at).toISOString().split('T')[0],
             matchScore: Math.round(Number(match.match_score) * 100), // Convert decimal to percentage
-            matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
-            icebreaker: match.icebreaker || 'What brings you to this activity?',
+            matchReason,
+            icebreaker,
             photoUrl: otherUserProfile.avatar_url,
             hasGivenFeedback,
             hasPositiveFeedback,
@@ -376,9 +392,12 @@ const MatchList = ({ activityId }: MatchListProps) => {
   };
 
   // Get matches to display based on context
-  const displayMatches = activityId 
-    ? matches.filter(m => m.shouldShow) 
-    : matches;
+  let displayMatches = matches;
+  if (historyMode) {
+    displayMatches = matches.filter(m => m.hasPositiveFeedback && m.otherUserFeedback === 'positive');
+  } else if (activityId) {
+    displayMatches = matches.filter(m => m.shouldShow);
+  }
 
   if (loading) {
     return (

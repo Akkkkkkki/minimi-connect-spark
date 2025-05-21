@@ -6,6 +6,12 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,16 +27,17 @@ interface UserActivity {
   end_time: string | null;
 }
 
-const MatchResults = () => {
+const MatchesPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedActivity, setSelectedActivity] = useState<string>("all");
   const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("recommended");
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast.error("Please sign in to view your recommendations", {
+      toast.error("Please sign in to view your matches", {
         description: "You'll be redirected to the login page"
       });
       setTimeout(() => navigate("/login"), 1500);
@@ -111,35 +118,60 @@ const MatchResults = () => {
   return (
     <PageLayout>
       <div className="space-y-6 mt-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary">Recommended Profiles</h1>
-        <p className="text-gray-600 text-lg max-w-2xl">
-          Here are your current recommended profiles. Provide feedback to help us improve your future matches.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
-          <h2 className="text-xl font-medium">Recommended Profiles</h2>
-          <Select 
-            value={selectedActivity} 
-            onValueChange={setSelectedActivity}
-          >
-            <SelectTrigger className="w-full sm:w-[250px]">
-              <SelectValue placeholder="Select an activity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Activities</SelectItem>
-              {userActivities.map(activity => (
-                <SelectItem key={activity.id} value={activity.id.toString()}>
-                  {activity.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} />
+        <h1 className="text-3xl md:text-4xl font-bold text-primary">Matches</h1>
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="recommended">Recommended</TabsTrigger>
+            <TabsTrigger value="history">Match History</TabsTrigger>
+          </TabsList>
+          <TabsContent value="recommended">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center mb-4">
+              <h2 className="text-xl font-medium">Recommended Profiles</h2>
+              <Select 
+                value={selectedActivity} 
+                onValueChange={setSelectedActivity}
+              >
+                <SelectTrigger className="w-full sm:w-[250px]">
+                  <SelectValue placeholder="Select an activity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Activities</SelectItem>
+                  {userActivities.map(activity => (
+                    <SelectItem key={activity.id} value={activity.id.toString()}>
+                      {activity.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} />
+          </TabsContent>
+          <TabsContent value="history">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center mb-4">
+              <h2 className="text-xl font-medium">Match History</h2>
+              <Select 
+                value={selectedActivity} 
+                onValueChange={setSelectedActivity}
+              >
+                <SelectTrigger className="w-full sm:w-[250px]">
+                  <SelectValue placeholder="Select an activity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Activities</SelectItem>
+                  {userActivities.map(activity => (
+                    <SelectItem key={activity.id} value={activity.id.toString()}>
+                      {activity.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} historyMode />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageLayout>
   );
 };
 
-export default MatchResults;
+export default MatchesPage;

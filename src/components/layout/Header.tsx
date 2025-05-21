@@ -32,8 +32,7 @@ const Header = () => {
   const authenticatedNavItems = [
     { label: "Profile", path: "/profile" },
     { label: "My Activities", path: "/my-activities" },
-    { label: "Recommended Profiles", path: "/matches" },
-    { label: "Match History", path: "/match-history" },
+    { label: "Matches", path: "/matches" },
     { label: "Organizer Portal", path: "/activity-management" }
   ];
 
@@ -123,10 +122,7 @@ const Header = () => {
                         My Activities
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/matches")}>
-                        Recommended Profiles
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/match-history")}>
-                        Match History
+                        Matches
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/activity-management")}>
                         Organizer Portal

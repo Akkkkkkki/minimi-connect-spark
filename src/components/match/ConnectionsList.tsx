@@ -22,8 +22,12 @@ interface Profile {
 interface MatchData {
   id: number;
   match_score: number;
-  match_reason: string | null;
-  icebreaker: string | null;
+  match_reason_1: string | null;
+  match_reason_2: string | null;
+  icebreaker_1: string | null;
+  icebreaker_2: string | null;
+  profile_id_1: string;
+  profile_id_2: string;
   profile: Profile;
   match_feedback: any[];
 }
@@ -62,9 +66,13 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
           .select(`
             id,
             match_score,
-            match_reason,
-            icebreaker,
+            match_reason_1,
+            match_reason_2,
+            icebreaker_1,
+            icebreaker_2,
+            profile_id_1,
             profile_id_2,
+            profile:profile_id_2 (id, first_name, last_name, avatar_url),
             match_feedback (
               id
             )
@@ -116,16 +124,15 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
         
         if (data) {
           for (const match of data) {
-            const profile = profileData[match.profile_id_2];
-            
+            const profile = profileData[match.profile_id_2] || match.profile;
             if (profile) {
               processedMatches.push({
                 id: match.id.toString(),
                 name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unnamed User',
                 avatar: profile.avatar_url || undefined,
-                matchReason: match.match_reason || 'You seem to be compatible based on your answers.',
+                matchReason: match.match_reason_1 || 'You seem to be compatible based on your answers.',
                 matchScore: match.match_score,
-                conversationStarter: match.icebreaker || 'What brings you to this activity?',
+                conversationStarter: match.icebreaker_1 || 'What brings you to this activity?',
                 hasResponded: match.match_feedback && match.match_feedback.length > 0
               });
             }

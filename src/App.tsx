@@ -21,6 +21,7 @@ import OnboardingPage from "@/pages/OnboardingPage";
 import { useRequireProfileCompletion } from "@/hooks/useRequireProfileCompletion";
 import { Suspense } from "react";
 import EditActivity from "./pages/EditActivity";
+import MatchesPage from "@/pages/MatchResults";
 
 function RequireProfileCompletion({ children }: { children: React.ReactNode }) {
   const { profileChecked } = useRequireProfileCompletion();
@@ -94,7 +95,7 @@ function App() {
               } />
               <Route path="/matches" element={
                 <RequireProfileCompletion>
-                  <MatchResults />
+                  <MatchesPage />
                 </RequireProfileCompletion>
               } />
               <Route path="/match-history" element={

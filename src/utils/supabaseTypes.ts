@@ -54,8 +54,10 @@ export interface Match {
   profile_id_1: string;
   profile_id_2: string;
   match_score: number;
-  match_reason: string;
-  icebreaker: string;
+  match_reason_1: string | null;
+  match_reason_2: string | null;
+  icebreaker_1: string | null;
+  icebreaker_2: string | null;
   created_at: string;
   profile_1_vote: 'up' | 'down' | 'none';
   profile_2_vote: 'up' | 'down' | 'none';

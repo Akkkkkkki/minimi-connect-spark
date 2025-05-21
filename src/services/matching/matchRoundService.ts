@@ -128,8 +128,10 @@ export class MatchRoundService {
         profile_id_1: match.userId,
         profile_id_2: participants[0].profile_id, // Reference user
         match_score: match.score,
-        match_reason: match.explanation,
-        icebreaker: this.generateIcebreaker(match)
+        match_reason_1: null, // To be filled asynchronously
+        match_reason_2: null, // To be filled asynchronously
+        icebreaker_1: null, // To be filled asynchronously
+        icebreaker_2: null // To be filled asynchronously
       }));
 
       await supabase.from('matches').insert(matches);

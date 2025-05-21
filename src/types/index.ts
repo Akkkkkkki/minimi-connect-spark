@@ -91,9 +91,16 @@ export interface Match {
   profileId1: string;
   profileId2: string;
   matchScore: number;
-  matchReason: string;
-  icebreaker: string;
+  matchReason1: string | null;
+  matchReason2: string | null;
+  icebreaker1: string | null;
+  icebreaker2: string | null;
   createdAt: string;
+  // Deprecated fields:
+  /** @deprecated Use matchReason1/matchReason2 */
+  matchReason?: string;
+  /** @deprecated Use icebreaker1/icebreaker2 */
+  icebreaker?: string;
 }
 
 // Feedback Types
