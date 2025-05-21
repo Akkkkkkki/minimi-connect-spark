@@ -34,7 +34,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
         const { data: activityData, error: activityError } = await supabase
           .from('activity')
           .select(`*, activity_participant (id, profile_id)`)
-          .eq('id', parseInt(activityId))
+          .eq('id', activityId)
           .single();
         if (activityError) throw activityError;
         if (activityData) {
@@ -55,13 +55,22 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
           const { data: aqData, error: aqError } = await supabase
             .from('activity_questionnaire')
             .select('*')
-            .eq('activity_id', parseInt(activityId))
+            .eq('activity_id', activityId)
             .maybeSingle();
           if (aqError) throw aqError;
           const hasQuestionnaire = !!aqData;
+          // Calculate status
+          const now = new Date();
+          let status = "upcoming";
+          if (activityData.end_time) {
+            status = new Date(activityData.end_time) <= now ? "completed" : "upcoming";
+          } else if (activityData.start_time) {
+            status = new Date(activityData.start_time) <= now ? "completed" : "upcoming";
+          }
           const formattedActivity = {
             ...activityData,
             hasQuestionnaire,
+            status,
           };
           setActivity(formattedActivity);
           // Check if questionnaire is completed
@@ -102,7 +111,7 @@ const ActivityDetails = ({ activityId }: ActivityDetailsProps) => {
     try {
       const { error } = await supabase
         .from('activity_participant')
-        .insert({ activity_id: parseInt(activityId), profile_id: user.id });
+        .insert({ activity_id: activityId, profile_id: user.id });
       if (error) throw error;
       toast.success('You have joined the activity!');
       setIsParticipant(true);

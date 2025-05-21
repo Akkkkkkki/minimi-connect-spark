@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const activityTypes = [
-  "Romance", "Networking", "Outdoor", "Sports", "Professional", 
-  "Arts", "Food & Drink", "Education", "Tech", "Music"
+  "Networking", "Dating", "Hobby"
 ];
 
 interface ActivityFiltersProps {
@@ -31,6 +29,31 @@ const ActivityFilters = ({ onSearch, onFilterChange }: ActivityFiltersProps) => 
   });
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
+
+  // Dynamically get location options from activities in localStorage (set by ActivitiesList)
+  useEffect(() => {
+    const activitiesRaw = localStorage.getItem("activities_for_filter");
+    if (activitiesRaw) {
+      try {
+        const activities = JSON.parse(activitiesRaw);
+        const locSet = new Set<string>();
+        activities.forEach((a: any) => {
+          if (a.country && a.city) {
+            locSet.add(`${a.country} - ${a.city}`);
+          }
+        });
+        setLocationOptions(Array.from(locSet));
+      } catch {}
+    }
+  }, [showFilters]);
+
+  // When ActivitiesList loads activities, store them for filter use
+  useEffect(() => {
+    if (window && (window as any).activitiesForFilter) {
+      localStorage.setItem("activities_for_filter", JSON.stringify((window as any).activitiesForFilter));
+    }
+  }, []);
 
   const handleSearch = () => {
     onSearch(searchQuery);
@@ -163,11 +186,9 @@ const ActivityFilters = ({ onSearch, onFilterChange }: ActivityFiltersProps) => 
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nearby">Nearby</SelectItem>
-                    <SelectItem value="new_york">New York</SelectItem>
-                    <SelectItem value="san_francisco">San Francisco</SelectItem>
-                    <SelectItem value="london">London</SelectItem>
-                    <SelectItem value="tokyo">Tokyo</SelectItem>
+                    {locationOptions.map(loc => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -182,11 +203,9 @@ const ActivityFilters = ({ onSearch, onFilterChange }: ActivityFiltersProps) => 
                     <SelectValue placeholder="Select date" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                    <SelectItem value="this_week">This Week</SelectItem>
-                    <SelectItem value="this_weekend">This Weekend</SelectItem>
-                    <SelectItem value="next_week">Next Week</SelectItem>
+                    <SelectItem value="in_7_days">In 7 Days</SelectItem>
+                    <SelectItem value="in_14_days">In 14 Days</SelectItem>
+                    <SelectItem value="in_30_days">In 30 Days</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

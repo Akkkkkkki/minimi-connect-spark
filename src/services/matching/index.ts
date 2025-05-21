@@ -38,9 +38,9 @@ export class MatchingService {
     }
 
     const { data: questionsData, error: questionsError } = await supabase
-      .from('questionnaire_content')
+      .from('questionnaire_question')
       .select('*')
-      .eq('questionnaire_id', questionnaireData.questionnaire_id)
+      .eq('questionnaire_id', questionnaireData.id)
       .order('order');
 
     if (questionsError) {
@@ -50,7 +50,7 @@ export class MatchingService {
     const { data: attributesData, error: attributesError } = await supabase
       .from('question_attributes')
       .select('*')
-      .eq('questionnaire_id', questionnaireData.questionnaire_id);
+      .eq('questionnaire_id', questionnaireData.id);
 
     if (attributesError) {
       throw new Error(`Failed to load question attributes: ${attributesError.message}`);
@@ -59,7 +59,6 @@ export class MatchingService {
     return {
       id: questionnaireData.id,
       activityId: questionnaireData.activity_id,
-      questionnaireId: questionnaireData.questionnaire_id,
       questions: questionsData,
       attributes: attributesData
     };

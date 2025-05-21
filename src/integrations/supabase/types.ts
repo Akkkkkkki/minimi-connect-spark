@@ -12,48 +12,87 @@ export type Database = {
       activity: {
         Row: {
           activity_type: string
+          applicants_max_number: number | null
+          city: string | null
+          country: string | null
           created_at: string
           creator_id: string
           description: string
           end_time: string | null
-          id: number
+          has_questionnaire: boolean | null
+          id: string
+          images: Json | null
+          lang: string | null
           location: string
+          mail: string | null
+          mobile: string | null
+          qrcode: Json | null
+          scope: string | null
+          social_media: string | null
           start_time: string
+          state: string | null
           tags: string[] | null
           title: string
           updated_at: string
+          version: number | null
         }
         Insert: {
           activity_type: string
+          applicants_max_number?: number | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           creator_id: string
           description: string
           end_time?: string | null
-          id?: never
+          has_questionnaire?: boolean | null
+          id?: string
+          images?: Json | null
+          lang?: string | null
           location: string
+          mail?: string | null
+          mobile?: string | null
+          qrcode?: Json | null
+          scope?: string | null
+          social_media?: string | null
           start_time: string
+          state?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
+          version?: number | null
         }
         Update: {
           activity_type?: string
+          applicants_max_number?: number | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           creator_id?: string
           description?: string
           end_time?: string | null
-          id?: never
+          has_questionnaire?: boolean | null
+          id?: string
+          images?: Json | null
+          lang?: string | null
           location?: string
+          mail?: string | null
+          mobile?: string | null
+          qrcode?: Json | null
+          scope?: string | null
+          social_media?: string | null
           start_time?: string
+          state?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
+          version?: number | null
         }
         Relationships: []
       }
       activity_feedback: {
         Row: {
-          activity_id: number
+          activity_id: string | null
           comment: string | null
           created_at: string
           id: number
@@ -61,7 +100,7 @@ export type Database = {
           rating: number
         }
         Insert: {
-          activity_id: number
+          activity_id?: string | null
           comment?: string | null
           created_at?: string
           id?: never
@@ -69,7 +108,7 @@ export type Database = {
           rating: number
         }
         Update: {
-          activity_id?: number
+          activity_id?: string | null
           comment?: string | null
           created_at?: string
           id?: never
@@ -78,7 +117,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "activity_feedback_activity_id_fkey"
+            foreignKeyName: "activity_feedback_activity_id_new_fkey"
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activity"
@@ -93,37 +132,64 @@ export type Database = {
           },
         ]
       }
-      activity_participant: {
+      activity_match_trigger_rule: {
         Row: {
-          activity_id: number
-          answers: Json | null
-          created_at: string
+          activity_id: string | null
+          create_time: string | null
+          create_user_id: string | null
+          created_at: string | null
+          deleted: number | null
+          executed: number | null
           id: number
-          profile_id: string
-          status: string
-          updated_at: string
+          name: string | null
+          sorted: number | null
+          status: string | null
+          trigger_time: number
+          trigger_type: string | null
+          update_time: string | null
+          update_user_id: string | null
+          updated_at: string | null
+          version: number | null
         }
         Insert: {
-          activity_id: number
-          answers?: Json | null
-          created_at?: string
-          id?: never
-          profile_id: string
-          status?: string
-          updated_at?: string
+          activity_id?: string | null
+          create_time?: string | null
+          create_user_id?: string | null
+          created_at?: string | null
+          deleted?: number | null
+          executed?: number | null
+          id?: number
+          name?: string | null
+          sorted?: number | null
+          status?: string | null
+          trigger_time: number
+          trigger_type?: string | null
+          update_time?: string | null
+          update_user_id?: string | null
+          updated_at?: string | null
+          version?: number | null
         }
         Update: {
-          activity_id?: number
-          answers?: Json | null
-          created_at?: string
-          id?: never
-          profile_id?: string
-          status?: string
-          updated_at?: string
+          activity_id?: string | null
+          create_time?: string | null
+          create_user_id?: string | null
+          created_at?: string | null
+          deleted?: number | null
+          executed?: number | null
+          id?: number
+          name?: string | null
+          sorted?: number | null
+          status?: string | null
+          trigger_time?: number
+          trigger_type?: string | null
+          update_time?: string | null
+          update_user_id?: string | null
+          updated_at?: string | null
+          version?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "activity_participants_activity_id_fkey"
+            foreignKeyName: "activity_match_trigger_rule_activity_id_new_fkey"
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activity"
@@ -131,22 +197,86 @@ export type Database = {
           },
         ]
       }
+      activity_participant: {
+        Row: {
+          activity_id: string | null
+          created_at: string
+          id: number
+          match_type: string | null
+          profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id?: string | null
+          created_at?: string
+          id?: never
+          match_type?: string | null
+          profile_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string | null
+          created_at?: string
+          id?: never
+          match_type?: string | null
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_participant_activity_id_new_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_questionnaire: {
+        Row: {
+          activity_id: string | null;
+          id: string;
+          version: number | null;
+        }
+        Insert: {
+          activity_id?: string | null;
+          id?: string;
+          version?: number | null;
+        }
+        Update: {
+          activity_id?: string | null;
+          id?: string;
+          version?: number | null;
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_questionnaire_activity_id_new_fkey",
+            columns: ["activity_id"],
+            isOneToOne: false,
+            referencedRelation: "activity",
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_tag: {
         Row: {
-          activity_id: number
+          activity_id: string | null
           tag_id: number
         }
         Insert: {
-          activity_id: number
+          activity_id?: string | null
           tag_id: number
         }
         Update: {
-          activity_id?: number
+          activity_id?: string | null
           tag_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "activity_tag_activity_id_fkey"
+            foreignKeyName: "activity_tag_activity_id_new_fkey"
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activity"
@@ -205,8 +335,12 @@ export type Database = {
           created_at: string
           icebreaker: string | null
           id: number
+          is_mutual_match: boolean | null
+          last_vote_update: string | null
           match_reason: string | null
           match_score: number
+          profile_1_vote: string | null
+          profile_2_vote: string | null
           profile_id_1: string
           profile_id_2: string
           round_id: number
@@ -215,8 +349,12 @@ export type Database = {
           created_at?: string
           icebreaker?: string | null
           id?: never
+          is_mutual_match?: boolean | null
+          last_vote_update?: string | null
           match_reason?: string | null
           match_score: number
+          profile_1_vote?: string | null
+          profile_2_vote?: string | null
           profile_id_1: string
           profile_id_2: string
           round_id: number
@@ -225,8 +363,12 @@ export type Database = {
           created_at?: string
           icebreaker?: string | null
           id?: never
+          is_mutual_match?: boolean | null
+          last_vote_update?: string | null
           match_reason?: string | null
           match_score?: number
+          profile_1_vote?: string | null
+          profile_2_vote?: string | null
           profile_id_1?: string
           profile_id_2?: string
           round_id?: number
@@ -278,7 +420,7 @@ export type Database = {
       }
       match_round: {
         Row: {
-          activity_id: number
+          activity_id: string | null
           created_at: string
           id: number
           name: string
@@ -287,7 +429,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          activity_id: number
+          activity_id?: string | null
           created_at?: string
           id?: never
           name: string
@@ -296,7 +438,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          activity_id?: number
+          activity_id?: string | null
           created_at?: string
           id?: never
           name?: string
@@ -306,7 +448,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "match_rounds_activity_id_fkey"
+            foreignKeyName: "match_round_activity_id_new_fkey"
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activity"
@@ -322,12 +464,16 @@ export type Database = {
           birth_year: number | null
           city: string | null
           country: string | null
+          create_user_id: string | null
           created_at: string | null
           deleted: boolean
           first_name: string | null
+          gender: string | null
           id: string
           last_name: string | null
+          update_user_id: string | null
           updated_at: string | null
+          version: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -336,12 +482,16 @@ export type Database = {
           birth_year?: number | null
           city?: string | null
           country?: string | null
+          create_user_id?: string | null
           created_at?: string | null
           deleted?: boolean
           first_name?: string | null
+          gender?: string | null
           id: string
           last_name?: string | null
+          update_user_id?: string | null
           updated_at?: string | null
+          version?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -350,85 +500,87 @@ export type Database = {
           birth_year?: number | null
           city?: string | null
           country?: string | null
+          create_user_id?: string | null
           created_at?: string | null
           deleted?: boolean
           first_name?: string | null
+          gender?: string | null
           id?: string
           last_name?: string | null
+          update_user_id?: string | null
           updated_at?: string | null
+          version?: number | null
         }
         Relationships: []
       }
-      questionnaire: {
+      questionnaire_question: {
         Row: {
-          activity_id: number
-          created_at: string
-          description: string | null
-          id: number
-          questions: Json
-          title: string
+          id: string
+          options: Json | null
+          order: number
+          question_text: string
+          question_type: string
+          questionnaire_id: string | null
+          required: boolean | null
         }
         Insert: {
-          activity_id: number
-          created_at?: string
-          description?: string | null
-          id?: never
-          questions?: Json
-          title: string
+          id?: string
+          options?: Json | null
+          order: number
+          question_text: string
+          question_type: string
+          questionnaire_id?: string | null
+          required?: boolean | null
         }
         Update: {
-          activity_id?: number
-          created_at?: string
-          description?: string | null
-          id?: never
-          questions?: Json
-          title?: string
+          id?: string
+          options?: Json | null
+          order?: number
+          question_text?: string
+          question_type?: string
+          questionnaire_id?: string | null
+          required?: boolean | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "questionnaires_activity_id_fkey"
-            columns: ["activity_id"]
-            isOneToOne: false
-            referencedRelation: "activity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       questionnaire_response: {
         Row: {
-          answers: Json
+          answers: Json | null
           created_at: string
           id: number
           participant_id: number
-          questionnaire_id: number
+          question_id: string | null
+          updated_at: string | null
         }
         Insert: {
-          answers?: Json
+          answers?: Json | null
           created_at?: string
           id?: never
           participant_id: number
-          questionnaire_id: number
+          question_id?: string | null
+          updated_at?: string | null
         }
         Update: {
-          answers?: Json
+          answers?: Json | null
           created_at?: string
           id?: never
           participant_id?: number
-          questionnaire_id?: number
+          question_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_questionnaire_response_question"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_question"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questionnaire_response_participant_id_fkey"
             columns: ["participant_id"]
             isOneToOne: false
             referencedRelation: "activity_participant"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "questionnaire_response_questionnaire_id_fkey"
-            columns: ["questionnaire_id"]
-            isOneToOne: false
-            referencedRelation: "questionnaire"
             referencedColumns: ["id"]
           },
         ]

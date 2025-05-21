@@ -111,13 +111,13 @@ export class MatchRoundService {
           gender: profile.gender,
           birth_month: profile.birth_month,
           birth_year: profile.birth_year,
-          interests: [], // TODO: Get from questionnaire answers
-          preferences: [], // TODO: Get from questionnaire answers
-          personalityTraits: [], // TODO: Get from questionnaire answers
+          interests: profile.interests || [], // STUB: Replace with actual extraction from questionnaire answers
+          preferences: profile.preferences || [], // STUB: Replace with actual extraction from questionnaire answers
+          personalityTraits: profile.personalityTraits || [], // STUB: Replace with actual extraction from questionnaire answers
           activities: [matchRound.activity_id],
-          answers: {}, // TODO: Get from questionnaire answers
-          hardFilters: [], // TODO: Get from questionnaire attributes
-          softPreferences: [] // TODO: Get from questionnaire attributes
+          answers: profile.answers || {}, // STUB: Replace with actual extraction from questionnaire answers
+          hardFilters: [], // STUB: Replace with actual extraction from questionnaire attributes
+          softPreferences: [] // STUB: Replace with actual extraction from questionnaire attributes
         })),
         questionnaire
       });
@@ -141,6 +141,8 @@ export class MatchRoundService {
         .eq('id', parseInt(roundId));
 
     } catch (error) {
+      // Provide user-facing feedback (stub: replace with toast or notification system in UI context)
+      // toast.error('Matching round failed. Please try again later.');
       console.error('Matching round failed:', error);
       await supabase
         .from('match_round')
@@ -151,7 +153,10 @@ export class MatchRoundService {
   }
 
   private generateIcebreaker(match: any): string {
-    // TODO: Implement icebreaker generation using OpenAI
-    return `Hi ${match.userId}, you and ${match.commonInterests.join(', ')} share common interests.`;
+    // STUB: Simple icebreaker generation
+    if (match.commonInterests && match.commonInterests.length > 0) {
+      return `You both like ${match.commonInterests.join(', ')}!`;
+    }
+    return `Say hi and discover what you have in common!`;
   }
 }

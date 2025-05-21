@@ -16,14 +16,14 @@ export interface Activity {
 export interface ActivityQuestionnaire {
   id: string;
   activity_id: string;
-  questionnaire_id: string;
+  version?: number;
 }
 
-export interface QuestionnaireContent {
+export interface QuestionnaireQuestion {
   id: string;
   questionnaire_id: string;
   question_text: string;
-  question_type: "multiple_choice" | "text";
+  question_type: "multiple_choice" | "single_choice" | "text";
   options?: string[];
   required?: boolean;
   order: number;

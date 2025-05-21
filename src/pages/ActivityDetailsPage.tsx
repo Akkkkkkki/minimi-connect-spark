@@ -22,18 +22,16 @@ const ActivityDetailsPage = () => {
       if (!activityId) return;
       
       setLoading(true);
-      console.log('Checking activity with ID:', activityId);
       
       try {
         // Check if activity exists
         const { data: activity, error: activityError } = await supabase
           .from('activity')
           .select('*')
-          .eq('id', parseInt(activityId))
+          .eq('id', activityId)
           .single();
           
         if (activityError) {
-          console.error('Activity check error:', activityError);
           setActivityExists(false);
           setLoading(false);
           toast.error("Activity not found");
@@ -41,7 +39,6 @@ const ActivityDetailsPage = () => {
           return;
         }
         
-        console.log('Activity found:', activity);
         setActivityExists(true);
         
         // Check if questionnaire exists for this activity
@@ -51,7 +48,6 @@ const ActivityDetailsPage = () => {
           .eq('activity_id', activityId);
         setHasQuestionnaire(aqData && aqData.length > 0);
       } catch (error) {
-        console.error("Error checking activity:", error);
         toast.error("Failed to load activity data");
       } finally {
         setLoading(false);

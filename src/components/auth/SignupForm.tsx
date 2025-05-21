@@ -123,16 +123,7 @@ const SignupForm = () => {
       // Normalize email
       const normalizedEmail = normalizeEmail(email);
       
-      console.log('Sending signup data with converted values:', {
-        first_name: firstName,
-        last_name: lastName,
-        gender: normalizedGender,
-        birth_month: birthMonthNumber,
-        birth_year: birthYear
-      });
-      
       // First, attempt the signup with normalized email
-      console.log(`Using normalized email: ${normalizedEmail}`);
       const { user, error } = await signUpWithEmail(normalizedEmail, password, {
         first_name: firstName,
         last_name: lastName,
@@ -142,8 +133,6 @@ const SignupForm = () => {
       });
       
       if (error) {
-        console.error('Error details from form:', error);
-        
         // Handle specific error cases with user-friendly messages
         if (error.message?.includes('Database error')) {
           setSignupError("There was a problem creating your account. Please try using a different email address or try again later.");
@@ -174,18 +163,15 @@ const SignupForm = () => {
         );
         
         if (profileError) {
-          console.error('Error creating profile:', profileError);
           // Don't show this error to the user - login was successful
         }
       } catch (profileErr) {
-        console.error('Profile creation error:', profileErr);
         // Don't show this error to the user - login was successful
       }
       
       toast.success("Account created successfully! Please check your email to confirm your account.");
       navigate('/login');
     } catch (err: any) {
-      console.error('Unexpected signup error:', err);
       setSignupError(`Signup error: ${err.message}`);
     } finally {
       setIsLoading(false);

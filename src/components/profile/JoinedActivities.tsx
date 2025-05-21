@@ -100,7 +100,7 @@ const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
     <div className="space-y-4">
       {activities.map((activity) => (
         <Card 
-          key={activity.id} 
+          key={activity.id.toString()} 
           className={onSelectActivity ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
           onClick={onSelectActivity ? () => onSelectActivity(activity.id.toString()) : undefined}
         >

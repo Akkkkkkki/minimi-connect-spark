@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
-import { ActivityParticipant, QuestionnaireContent } from "@/utils/supabaseTypes";
+import { ActivityParticipant, QuestionnaireQuestion } from "@/utils/supabaseTypes";
 
 interface QuestionnaireFormProps {
   activityId: string;
@@ -30,22 +30,21 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [questionnaire, setQuestionnaire] = useState<QuestionnaireContent | null>(null);
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireQuestion | null>(null);
   const [activity, setActivity] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [existingParticipation, setExistingParticipation] = useState<ActivityParticipant | null>(null);
-  const [questions, setQuestions] = useState<QuestionnaireContent[]>([]);
+  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
 
   useEffect(() => {
     const fetchQuestionnaire = async () => {
       setLoading(true);
       try {
-        console.log("[DEBUG] Fetching questionnaire for activityId:", activityId, "user:", user);
         // Fetch activity information
         const { data: activityData, error: activityError } = await supabase
           .from('activity')
           .select("*")
-          .eq("id", Number(activityId))
+          .eq("id", activityId)
           .single();
 
         if (activityError) throw activityError;
@@ -55,7 +54,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         const { data: aqData, error: aqError } = await supabase
           .from('activity_questionnaire')
           .select("*")
-          .eq("activity_id", Number(activityId))
+          .eq("activity_id", activityId)
           .maybeSingle();
         if (aqError) throw aqError;
         if (!aqData) {
@@ -63,15 +62,14 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           setQuestionnaire(null);
         } else {
           setQuestionnaire(aqData);
-          // Fetch questions for this questionnaire_id
+          // Fetch questions for this questionnaire
           const { data: questionsData, error: questionsError } = await supabase
-            .from('questionnaire_content')
+            .from('questionnaire_question')
             .select("*")
-            .eq("questionnaire_id", aqData.questionnaire_id)
+            .eq("questionnaire_id", aqData.id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
           setQuestions(questionsData || []);
-          console.log("[DEBUG] Loaded questions:", questionsData);
         }
 
         if (isParticipant && user) {
@@ -79,7 +77,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           const { data: participationData, error: participationError } = await supabase
             .from('activity_participant')
             .select("*")
-            .eq("activity_id", Number(activityId))
+            .eq("activity_id", activityId)
             .eq("profile_id", user.id)
             .single();
 
@@ -89,7 +87,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
 
           if (participationData) {
             setExistingParticipation(participationData);
-            console.log("[DEBUG] Found participationData:", participationData);
             // Fetch existing questionnaire responses
             const { data: responsesData, error: responsesError } = await supabase
               .from('questionnaire_response')
@@ -97,20 +94,16 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               .eq("participant_id", participationData.id);
 
             if (responsesError) throw responsesError;
-            console.log("[DEBUG] Loaded responsesData:", responsesData);
             // Convert responses to answers format
             const answers: Answers = {};
             responsesData?.forEach(response => {
               answers[response.question_id] = { answer: response.answers };
             });
             setAnswers(answers);
-            console.log("[DEBUG] Prefilled answers:", answers);
           } else {
-            console.log("[DEBUG] No participationData found for user");
           }
         }
       } catch (error) {
-        console.error("Error fetching questionnaire:", error);
         toast.error("Failed to load questionnaire");
       } finally {
         setLoading(false);
@@ -126,7 +119,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
   useEffect(() => {
     if (questions.length > 0) {
       questions.forEach((question) => {
-        console.log("[DEBUG] Render question", question.id, "Prefilled value", answers[question.id]);
       });
     }
   }, [questions, answers]);
@@ -216,7 +208,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             .eq("id", existingParticipation.id);
 
           if (updateError) {
-            console.error("Error updating participation:", updateError);
             throw new Error(`Failed to update participation: ${updateError.message}`);
           }
         } else {
@@ -224,7 +215,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           const { data: newParticipation, error: participationError } = await supabase
             .from('activity_participant')
             .insert({
-              activity_id: Number(activityId),
+              activity_id: activityId,
               profile_id: user.id,
               status: "completed"
             })
@@ -232,7 +223,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             .single();
 
           if (participationError) {
-            console.error("Error creating participation:", participationError);
             throw new Error(`Failed to create participation: ${participationError.message}`);
           }
 
@@ -252,7 +242,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             .eq("question_id", question.id)
             .maybeSingle();
           if (fetchError) {
-            console.error("Error checking existing response:", fetchError);
             throw new Error(`Failed to check existing response: ${fetchError.message}`);
           }
           if (existingResponse && existingResponse.id) {
@@ -265,7 +254,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               })
               .eq("id", existingResponse.id);
             if (updateResponseError) {
-              console.error("Error updating questionnaire response:", updateResponseError);
               throw new Error(`Failed to update questionnaire response: ${updateResponseError.message}`);
             }
           } else {
@@ -280,7 +268,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
                 updated_at: new Date().toISOString()
               });
             if (insertResponseError) {
-              console.error("Error saving questionnaire response:", insertResponseError);
               throw new Error(`Failed to save questionnaire response: ${insertResponseError.message}`);
             }
           }
@@ -296,7 +283,6 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         navigate(`/activity-management`);
       }
     } catch (error) {
-      console.error("Error submitting questionnaire:", error);
       toast.error(error instanceof Error ? error.message : "Failed to submit questionnaire");
     } finally {
       setSaving(false);
@@ -415,38 +401,36 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
                         className="w-full"
                       />
                     )}
-                    
-                    {question.question_type === "multiple_choice" && options && (
-                      <div className="space-y-3">
-                        {options.length <= 4 ? (
-                          <RadioGroup
-                            value={(answers[question.id]?.answer as string) || ""}
-                            onValueChange={(value) => handleSingleChoiceAnswer(question.id, value)}
-                            className="flex flex-col space-y-2"
-                          >
-                            {options.map((option, idx) => (
-                              <div key={idx} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${question.id}-${idx}`} />
-                                <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
-                              </div>
-                            ))}
-                          </RadioGroup>
-                        ) : (
-                          <div className="space-y-2">
-                            {options.map((option, idx) => (
-                              <div key={idx} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`${question.id}-${idx}`}
-                                  checked={isOptionSelected(question.id, option)}
-                                  onCheckedChange={(checked) => 
-                                    handleMultipleChoiceAnswer(question.id, option, checked === true)
-                                  }
-                                />
-                                <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
-                              </div>
-                            ))}
+
+                    {question.question_type === "single_choice" && options && (
+                      <RadioGroup
+                        value={(answers[question.id]?.answer as string) || ""}
+                        onValueChange={(value) => handleSingleChoiceAnswer(question.id, value)}
+                        className="flex flex-col space-y-2"
+                      >
+                        {options.map((option, idx) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`${question.id}-${idx}`} />
+                            <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
                           </div>
-                        )}
+                        ))}
+                      </RadioGroup>
+                    )}
+
+                    {question.question_type === "multiple_choice" && options && (
+                      <div className="space-y-2">
+                        {options.map((option, idx) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${question.id}-${idx}`}
+                              checked={isOptionSelected(question.id, option)}
+                              onCheckedChange={(checked) => 
+                                handleMultipleChoiceAnswer(question.id, option, checked === true)
+                              }
+                            />
+                            <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

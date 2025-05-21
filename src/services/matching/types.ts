@@ -7,7 +7,7 @@ export interface QuestionAttribute {
   required?: boolean;  // For hard filters
 }
 
-import { QuestionnaireContent } from '@/utils/supabaseTypes';
+import { QuestionnaireQuestion } from '@/utils/supabaseTypes';
 
 export interface UserProfile {
   userId: string;
@@ -27,8 +27,7 @@ export interface UserProfile {
 export interface ActivityQuestionnaire {
   id: string;
   activityId: string;
-  questionnaireId: string;
-  questions: QuestionnaireContent[];
+  questions: QuestionnaireQuestion[];
   attributes: QuestionAttribute[];
 }
 

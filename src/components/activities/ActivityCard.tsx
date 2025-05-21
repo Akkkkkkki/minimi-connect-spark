@@ -9,6 +9,8 @@ export interface ActivityCardProps {
   title: string;
   description: string;
   location: string;
+  city?: string;
+  country?: string;
   date: string;
   time: string;
   participants: {
@@ -19,6 +21,8 @@ export interface ActivityCardProps {
   imageUrl?: string;
   isParticipant?: boolean;
   status?: 'upcoming' | 'completed';
+  activity_type?: string;
+  startDateISO?: string;
 }
 
 const ActivityCard = ({
@@ -26,6 +30,8 @@ const ActivityCard = ({
   title,
   description,
   location,
+  city,
+  country,
   date,
   time,
   participants,
@@ -116,7 +122,7 @@ const ActivityCard = ({
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-sm text-gray-500">
             <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="truncate">{location}</span>
+            <span className="truncate">{location}, {city}, {country}</span>
           </div>
           <div className="flex items-center text-sm text-gray-500">
             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />

@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type Profile = Database["public"]["Tables"]["profile"]["Row"];
 
 // Helper: Returns true if profile is complete (main fields are present)
-function isProfileComplete(profile: any) {
+function isProfileComplete(profile: Profile | null) {
   return (
     profile &&
     !!profile.first_name &&
@@ -47,7 +50,7 @@ export function useRequireProfileCompletion() {
           return;
         }
 
-        if (!data || !isProfileComplete(data)) {
+        if (!data || !isProfileComplete(data as Profile)) {
           navigate("/onboarding");
         }
         

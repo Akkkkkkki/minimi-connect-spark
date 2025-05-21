@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ const MatchRounds = ({ activityId }: MatchRoundsProps) => {
 
   const handleCreateRound = (data: { name: string; scheduledTime: string }) => {
     toast.success("New round created!");
-    console.log("New round:", data);
   };
 
   return (

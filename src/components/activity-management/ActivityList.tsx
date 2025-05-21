@@ -38,7 +38,7 @@ const ActivityList = ({ onSelectActivity, statusFilter = 'upcoming' }: ActivityL
         // Get activities created by this user
         const { data, error } = await supabase
           .from('activity')
-          .select(`*, activity_questionnaire (id, questionnaire_id), activity_participant (id)`)
+          .select(`*, activity_questionnaire (id), activity_participant (id)`)
           .eq('creator_id', user.id);
           
         if (error) throw error;
@@ -152,7 +152,7 @@ const ActivityList = ({ onSelectActivity, statusFilter = 'upcoming' }: ActivityL
   return (
     <div className="space-y-4">
       {filteredActivities.map(activity => (
-        <Card key={activity.id} className="overflow-hidden">
+        <Card key={activity.id.toString()} className="overflow-hidden">
           <CardContent className="p-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-row justify-between items-start gap-2">

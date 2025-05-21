@@ -18,7 +18,7 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, MoveUp, MoveDown, Edit, Save } from "lucide-react";
-import { QuestionnaireContent, ActivityQuestionnaire } from "@/utils/supabaseTypes";
+import { QuestionnaireQuestion, ActivityQuestionnaire } from "@/utils/supabaseTypes";
 
 const QuestionnaireBuilder = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -28,10 +28,11 @@ const QuestionnaireBuilder = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [questionnaire, setQuestionnaire] = useState<any | null>(null);
-  const [questions, setQuestions] = useState<QuestionnaireContent[]>([]);
+  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
   const [activity, setActivity] = useState<any | null>(null);
+  const [originalQuestions, setOriginalQuestions] = useState<QuestionnaireQuestion[]>([]);
 
-  const [newQuestion, setNewQuestion] = useState<Partial<QuestionnaireContent>>({
+  const [newQuestion, setNewQuestion] = useState<Partial<QuestionnaireQuestion>>({
     question_text: "",
     question_type: "text",
     required: true,
@@ -52,7 +53,7 @@ const QuestionnaireBuilder = () => {
           .single();
         if (activityError) throw activityError;
         setActivity(activityData);
-        // Fetch activity_questionnaire to get questionnaire_id
+        // Fetch activity_questionnaire to get id
         const { data: aqData, error: aqError } = await supabase
           .from('activity_questionnaire')
           .select("*")
@@ -62,16 +63,18 @@ const QuestionnaireBuilder = () => {
         if (!aqData) {
           setQuestionnaire(null);
           setQuestions([]);
+          setOriginalQuestions([]);
         } else {
           setQuestionnaire(aqData);
-          // Fetch questions for this questionnaire_id
+          // Fetch questions for this questionnaire
           const { data: questionsData, error: questionsError } = await supabase
-            .from('questionnaire_content')
+            .from('questionnaire_question')
             .select("*")
-            .eq("questionnaire_id", aqData.questionnaire_id)
+            .eq("questionnaire_id", aqData.id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
           setQuestions(questionsData || []);
+          setOriginalQuestions(questionsData || []);
         }
       } catch (error) {
         console.error("Error fetching questionnaire:", error);
@@ -130,9 +133,9 @@ const QuestionnaireBuilder = () => {
       toast.error("Multiple choice questions require at least two options");
       return;
     }
-    const newQuestionComplete: QuestionnaireContent = {
-      id: `q${Date.now()}`,
-      questionnaire_id: questionnaire?.questionnaire_id || '',
+    const newQuestionComplete: QuestionnaireQuestion = {
+      id: crypto.randomUUID(),
+      questionnaire_id: questionnaire?.id || '',
       question_text: newQuestion.question_text!,
       question_type: newQuestion.question_type || "text",
       required: newQuestion.required ?? true,
@@ -196,9 +199,34 @@ const QuestionnaireBuilder = () => {
     }
     setSaving(true);
     try {
-      // Only update activity_questionnaire and questionnaire_content as needed
-      // Remove all logic that writes to the old questionnaire table
-      // ... (implementation depends on your organizer logic, but do not use questionnaire table)
+      // Upsert all questions
+      const upsertQuestions = questions.map((q, idx) => {
+        const base = {
+          ...q,
+          order: idx,
+          questionnaire_id: questionnaire.id,
+        };
+        if (q.question_type === 'multiple_choice' && q.options) {
+          return { ...base, options: JSON.stringify(q.options) };
+        }
+        // Remove options field for non-multiple_choice
+        const { options, ...rest } = base;
+        return rest;
+      });
+      const { error: upsertError } = await supabase
+        .from('questionnaire_question')
+        .upsert(upsertQuestions as any, { onConflict: 'id' });
+      if (upsertError) throw upsertError;
+      // Delete removed questions
+      const currentIds = new Set(questions.map(q => q.id));
+      const toDelete = originalQuestions.filter(q => !currentIds.has(q.id));
+      if (toDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('questionnaire_question')
+          .delete()
+          .in('id', toDelete.map(q => q.id));
+        if (deleteError) throw deleteError;
+      }
       toast.success("Questionnaire has been saved");
       navigate(`/activity-management`);
     } catch (error) {
@@ -249,28 +277,6 @@ const QuestionnaireBuilder = () => {
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Questionnaire Title</Label>
-              <Input
-                id="title"
-                value={activity?.title || ""}
-                disabled
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={activity?.description || ""}
-                disabled
-                className="w-full"
-              />
-            </div>
-          </div>
-
           <div className="border-t pt-6">
             <h3 className="text-lg font-medium mb-4">Questions</h3>
             
@@ -283,10 +289,103 @@ const QuestionnaireBuilder = () => {
                 {questions.map((question, index) => {
                   const options = question.options ?? [];
                   const required = question.required ?? true;
+                  if (editingQuestionIndex === index) {
+                    // Render edit form in place
+                    return (
+                      <Card key={question.id} className="relative">
+                        <CardContent className="pt-4 pl-10">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="questionText">Question Text</Label>
+                              <Input
+                                id="questionText"
+                                value={newQuestion.question_text}
+                                onChange={(e) => setNewQuestion({...newQuestion, question_text: e.target.value})}
+                                placeholder="Enter your question here"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="questionType">Question Type</Label>
+                              <Select
+                                value={newQuestion.question_type}
+                                onValueChange={(value) => handleQuestionTypeChange(value as "multiple_choice" | "text")}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select question type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="text">Text Response</SelectItem>
+                                  <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="required"
+                                checked={newQuestion.required}
+                                onCheckedChange={(checked) => setNewQuestion({...newQuestion, required: checked})}
+                              />
+                              <Label htmlFor="required">Required Question</Label>
+                            </div>
+                            {newQuestion.question_type === "multiple_choice" && (
+                              <div className="space-y-3">
+                                <Label>Options</Label>
+                                {newQuestion.options?.map((option, optIdx) => (
+                                  <div key={optIdx} className="flex space-x-2">
+                                    <Input
+                                      value={option}
+                                      onChange={(e) => handleOptionChange(optIdx, e.target.value)}
+                                      placeholder={`Option ${optIdx + 1}`}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => removeOption(optIdx)}
+                                      disabled={newQuestion.options?.length === 1}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={addOption}
+                                  className="mt-2"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Add Option
+                                </Button>
+                              </div>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              <Button type="button" onClick={addQuestion}>
+                                <Save className="h-4 w-4 mr-2" /> Update Question
+                              </Button>
+                              <Button type="button" variant="outline" onClick={() => {
+                                setEditingQuestionIndex(null);
+                                setNewQuestion({
+                                  question_text: "",
+                                  question_type: "text",
+                                  required: true,
+                                  options: [""]
+                                });
+                              }}>
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  // Render normal card
                   return (
                     <Card key={question.id} className="relative">
                       <div className="absolute left-2 top-4 flex flex-col gap-1">
                         <Button 
+                          type="button"
                           variant="ghost" 
                           size="icon" 
                           onClick={() => moveQuestion(index, 'up')}
@@ -297,6 +396,7 @@ const QuestionnaireBuilder = () => {
                         </Button>
                         <GripVertical className="h-4 w-4 mx-auto text-muted-foreground" />
                         <Button 
+                          type="button"
                           variant="ghost" 
                           size="icon" 
                           onClick={() => moveQuestion(index, 'down')}
@@ -317,6 +417,7 @@ const QuestionnaireBuilder = () => {
                           </div>
                           <div className="flex space-x-2">
                             <Button 
+                              type="button"
                               variant="outline" 
                               size="icon"
                               onClick={() => editQuestion(index)}
@@ -324,6 +425,7 @@ const QuestionnaireBuilder = () => {
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button 
+                              type="button"
                               variant="outline" 
                               size="icon"
                               onClick={() => deleteQuestion(index)}
@@ -350,92 +452,84 @@ const QuestionnaireBuilder = () => {
               </div>
             )}
 
-            <div className="mt-6 border-t pt-6">
-              <h3 className="text-md font-medium mb-4">
-                {editingQuestionIndex !== null ? "Edit Question" : "Add New Question"}
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="questionText">Question Text</Label>
-                  <Input
-                    id="questionText"
-                    value={newQuestion.question_text}
-                    onChange={(e) => setNewQuestion({...newQuestion, question_text: e.target.value})}
-                    placeholder="Enter your question here"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="questionType">Question Type</Label>
-                  <Select
-                    value={newQuestion.question_type}
-                    onValueChange={(value) => handleQuestionTypeChange(value as "multiple_choice" | "text")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select question type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">Text Response</SelectItem>
-                      <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="required"
-                    checked={newQuestion.required}
-                    onCheckedChange={(checked) => setNewQuestion({...newQuestion, required: checked})}
-                  />
-                  <Label htmlFor="required">Required Question</Label>
-                </div>
-                
-                {newQuestion.question_type === "multiple_choice" && (
-                  <div className="space-y-3">
-                    <Label>Options</Label>
-                    {newQuestion.options?.map((option, index) => (
-                      <div key={index} className="flex space-x-2">
-                        <Input
-                          value={option}
-                          onChange={(e) => handleOptionChange(index, e.target.value)}
-                          placeholder={`Option ${index + 1}`}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeOption(index)}
-                          disabled={newQuestion.options?.length === 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addOption}
-                      className="mt-2"
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Add Option
-                    </Button>
+            {/* Only show add new question form if not editing */}
+            {editingQuestionIndex === null && (
+              <div className="mt-6 border-t pt-6">
+                <h3 className="text-md font-medium mb-4">Add New Question</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="questionText">Question Text</Label>
+                    <Input
+                      id="questionText"
+                      value={newQuestion.question_text}
+                      onChange={(e) => setNewQuestion({...newQuestion, question_text: e.target.value})}
+                      placeholder="Enter your question here"
+                    />
                   </div>
-                )}
-                
-                <Button
-                  type="button"
-                  onClick={addQuestion}
-                >
-                  {editingQuestionIndex !== null ? (
-                    <><Save className="h-4 w-4 mr-2" /> Update Question</>
-                  ) : (
-                    <><Plus className="h-4 w-4 mr-2" /> Add Question</>
+                  <div className="space-y-2">
+                    <Label htmlFor="questionType">Question Type</Label>
+                    <Select
+                      value={newQuestion.question_type}
+                      onValueChange={(value) => handleQuestionTypeChange(value as "multiple_choice" | "text")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select question type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Text Response</SelectItem>
+                        <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="required"
+                      checked={newQuestion.required}
+                      onCheckedChange={(checked) => setNewQuestion({...newQuestion, required: checked})}
+                    />
+                    <Label htmlFor="required">Required Question</Label>
+                  </div>
+                  {newQuestion.question_type === "multiple_choice" && (
+                    <div className="space-y-3">
+                      <Label>Options</Label>
+                      {newQuestion.options?.map((option, index) => (
+                        <div key={index} className="flex space-x-2">
+                          <Input
+                            value={option}
+                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                            placeholder={`Option ${index + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeOption(index)}
+                            disabled={newQuestion.options?.length === 1}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addOption}
+                        className="mt-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Option
+                      </Button>
+                    </div>
                   )}
-                </Button>
+                  <Button
+                    type="button"
+                    onClick={addQuestion}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add Question
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </form>
       </CardContent>

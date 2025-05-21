@@ -42,19 +42,26 @@ const ActivitiesList = () => {
               title: activity.title,
               description: activity.description,
               location: activity.location,
+              city: activity.city,
+              country: activity.country,
               date: new Date(activity.start_time).toLocaleDateString(),
               time: new Date(activity.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+              startDateISO: activity.start_time,
               participants: {
                 current: activity.activity_participant?.length || 0,
-                max: 30
+                max: activity.applicants_max_number ?? 30
               },
               tags: limitedTags,
+              activity_type: activity.activity_type,
               isParticipant: joinedIds.has(activity.id.toString()),
               status,
             };
           });
           setActivities(processedActivities);
           setFilteredActivities(processedActivities);
+          if (typeof window !== 'undefined') {
+            (window as any).activitiesForFilter = processedActivities;
+          }
         }
       } catch (error) {
         console.error("Error fetching activities:", error);
@@ -87,47 +94,37 @@ const ActivitiesList = () => {
 
   const handleFilterChange = (filters: Record<string, string | string[]>) => {
     let filtered = [...activities];
-    
     // Filter by activity type
     if (filters.type && Array.isArray(filters.type) && filters.type.length > 0) {
       filtered = filtered.filter(activity => 
-        activity.tags.some(tag => (filters.type as string[]).includes(tag))
+        (filters.type as string[]).some(type => activity.activity_type?.toLowerCase() === type.toLowerCase())
       );
     }
-    
     // Filter by location
     if (filters.location && typeof filters.location === 'string' && filters.location !== '') {
       filtered = filtered.filter(activity => {
-        if (filters.location === 'nearby') {
-          return true; // In a real app, we'd use geolocation
-        }
-        return activity.location.toLowerCase().includes((filters.location as string).toLowerCase());
+        const locString = `${activity.country} - ${activity.city}`;
+        return locString === filters.location;
       });
     }
-    
     // Filter by date
     if (filters.date && typeof filters.date === 'string' && filters.date !== '') {
-      // This would be implemented with real date filtering in a production app
       const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      
-      filtered = filtered.filter(activity => {
-        const activityDate = new Date(activity.date);
-        
-        if (filters.date === 'today') {
-          return activityDate.toDateString() === today.toDateString();
-        } else if (filters.date === 'tomorrow') {
-          return activityDate.toDateString() === tomorrow.toDateString();
-        } else if (filters.date === 'week') {
-          return activityDate > today && activityDate <= nextWeek;
-        }
-        return true;
-      });
+      today.setHours(0, 0, 0, 0);
+      let days = 0;
+      if (filters.date === 'in_7_days') days = 7;
+      else if (filters.date === 'in_14_days') days = 14;
+      else if (filters.date === 'in_30_days') days = 30;
+      if (days > 0) {
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() + days);
+        filtered = filtered.filter(activity => {
+          const activityDate = new Date(activity.startDateISO);
+          activityDate.setHours(0, 0, 0, 0);
+          return activityDate >= today && activityDate <= endDate;
+        });
+      }
     }
-    
     setFilteredActivities(filtered);
   };
 
