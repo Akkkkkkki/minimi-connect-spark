@@ -1,5 +1,4 @@
 {
-  "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
@@ -9,11 +8,23 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "outDir": "./build",
+    "rootDir": ".",
     "noImplicitAny": false,
     "noUnusedParameters": false,
     "skipLibCheck": true,
     "allowJs": true,
     "noUnusedLocals": false,
-    "strictNullChecks": false
-  }
+    "strictNullChecks": false,
+    "types": [],
+    "target": "ES2020",
+    "moduleResolution": "nodenext",
+    "module": "NodeNext"
+  },
+  "include": [
+    "src",
+    "scripts",
+    "vite.config.ts",
+    "tailwind.config.ts"
+  ]
 }
