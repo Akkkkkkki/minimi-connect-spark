@@ -45,6 +45,10 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (Postgres, Auth, Edge Functions)
+- OpenAI API (for matching logic and reasoning)
+
+> **Note:** Next.js and LinkedIn OAuth are not currently implemented. Authentication is via Supabase (email/phone only).
 
 ## Note
 
@@ -143,9 +147,9 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 ## High-Level Technical Stack Recommendations
 
-- **Frontend:** Next.js 14, Tailwind CSS, shadcn/UI
+- **Frontend:** Vite + React + TypeScript + shadcn-ui + Tailwind CSS
 - **Backend:** Supabase (Postgres, Auth, Edge Functions)
-- **Auth:** Phone/email login via Supabase; LinkedIn OAuth later
+- **Auth:** Supabase Auth (email/phone only, LinkedIn OAuth planned)
 - **AI Engine:** OpenAI API (for matching logic and reasoning)
 - **CMS (optional):** Notion (for landing/help content)
 
@@ -195,6 +199,21 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Video introductions or in-app video chat
 - Gamification (e.g., badges for engaged users)
 - Integration with calendars or social platforms
+
+### 🚧 TODO: Upcoming Prototyping Features
+
+#### Event Ticketing System (Prototype)
+- Allow organizers to enable ticketing for their events (toggle when creating/editing an event).
+- Users can reserve a ticket for an event (no payment required for prototype).
+- Track ticket reservations in the database (e.g., new `tickets` or `event_tickets` table).
+- Show ticket status (reserved/full) on activity and profile pages.
+- Export list of ticket holders for organizers.
+
+#### LinkedIn Sign-In (Prototype)
+- Add LinkedIn OAuth as a sign-in option (alongside email/phone).
+- On sign-in, fetch and store user's LinkedIn profile data (name, headline, photo, etc.) in the database.
+- Use LinkedIn data to enrich user profiles and improve matching.
+- (Optional) Show LinkedIn badge or info on user profile cards.
 
 ## Potential Challenges and Solutions
 
