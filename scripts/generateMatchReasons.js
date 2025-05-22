@@ -107,15 +107,15 @@ function fetchProfile(profileId) {
         });
     });
 }
-function fetchQuestionnaireAnswers(activityId, profileId) {
+function fetchQuestionnaireAnswers(eventId, profileId) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, participant, partError, _b, answers, ansError;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0: return [4 /*yield*/, supabase
-                        .from('activity_participant')
+                        .from('event_participant')
                         .select('id')
-                        .eq('activity_id', activityId)
+                        .eq('event_id', eventId)
                         .eq('profile_id', profileId)
                         .single()];
                 case 1:
@@ -136,17 +136,17 @@ function fetchQuestionnaireAnswers(activityId, profileId) {
     });
 }
 function buildPrompt(_a) {
-    var selfProfile = _a.selfProfile, otherProfile = _a.otherProfile, selfAnswers = _a.selfAnswers, otherAnswers = _a.otherAnswers, activity = _a.activity;
-    return "You are an expert matchmaker. Given the following two user profiles and their answers to the event questionnaire, write a short, friendly reason why the first user would be a good match for the second user in this activity, and suggest a fun icebreaker for their first conversation.\n\nActivity: ".concat(activity.title, "\n\nUser A (the one receiving this message):\n").concat(JSON.stringify(selfProfile, null, 2), "\n\nTheir answers:\n").concat(JSON.stringify(selfAnswers, null, 2), "\n\nUser B (their match):\n").concat(JSON.stringify(otherProfile, null, 2), "\n\nTheir answers:\n").concat(JSON.stringify(otherAnswers, null, 2), "\n\nRespond in JSON with keys 'reason' and 'icebreaker'.");
+    var selfProfile = _a.selfProfile, otherProfile = _a.otherProfile, selfAnswers = _a.selfAnswers, otherAnswers = _a.otherAnswers, event = _a.event;
+    return "You are an expert matchmaker. Given the following two user profiles and their answers to the event questionnaire, write a short, friendly reason why the first user would be a good match for the second user in this event, and suggest a fun icebreaker for their first conversation.\n\nEvent: ".concat(event.title, "\n\nUser A (the one receiving this message):\n").concat(JSON.stringify(selfProfile, null, 2), "\n\nTheir answers:\n").concat(JSON.stringify(selfAnswers, null, 2), "\n\nUser B (their match):\n").concat(JSON.stringify(otherProfile, null, 2), "\n\nTheir answers:\n").concat(JSON.stringify(otherAnswers, null, 2), "\n\nRespond in JSON with keys 'reason' and 'icebreaker'.");
 }
 function generateReasonAndIcebreaker(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var prompt, completion, text, json;
-        var selfProfile = _b.selfProfile, otherProfile = _b.otherProfile, selfAnswers = _b.selfAnswers, otherAnswers = _b.otherAnswers, activity = _b.activity;
+        var selfProfile = _b.selfProfile, otherProfile = _b.otherProfile, selfAnswers = _b.selfAnswers, otherAnswers = _b.otherAnswers, event = _b.event;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    prompt = buildPrompt({ selfProfile: selfProfile, otherProfile: otherProfile, selfAnswers: selfAnswers, otherAnswers: otherAnswers, activity: activity });
+                    prompt = buildPrompt({ selfProfile: selfProfile, otherProfile: otherProfile, selfAnswers: selfAnswers, otherAnswers: otherAnswers, event: event });
                     return [4 /*yield*/, openai.chat.completions.create({
                             model: MODEL,
                             messages: [{ role: 'user', content: prompt }],
@@ -172,39 +172,39 @@ function generateReasonAndIcebreaker(_a) {
         });
     });
 }
-function fetchActivity(roundId) {
+function fetchEvent(roundId) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, round, error;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/, supabase
                         .from('match_round')
-                        .select('activity_id, activity:activity_id (id, title)')
+                        .select('event_id, event:event_id (id, title)')
                         .eq('id', roundId)
                         .single()];
                 case 1:
                     _a = _b.sent(), round = _a.data, error = _a.error;
                     if (error)
                         throw error;
-                    // round.activity is either an object or an array; ensure we return the object
-                    if (Array.isArray(round.activity)) {
-                        return [2 /*return*/, round.activity[0]];
+                    // round.event is either an object or an array; ensure we return the object
+                    if (Array.isArray(round.event)) {
+                        return [2 /*return*/, round.event[0]];
                     }
-                    return [2 /*return*/, round.activity];
+                    return [2 /*return*/, round.event];
             }
         });
     });
 }
 function processMatch(match) {
     return __awaiter(this, void 0, void 0, function () {
-        var activity, _a, profile1, profile2, _b, answers1, answers2, update, res, res, e_1;
+        var event, _a, profile1, profile2, _b, answers1, answers2, update, res, res, e_1;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
                     _c.trys.push([0, 10, , 11]);
-                    return [4 /*yield*/, fetchActivity(match.round_id)];
+                    return [4 /*yield*/, fetchEvent(match.round_id)];
                 case 1:
-                    activity = _c.sent();
+                    event = _c.sent();
                     return [4 /*yield*/, Promise.all([
                             fetchProfile(match.profile_id_1),
                             fetchProfile(match.profile_id_2)
@@ -212,8 +212,8 @@ function processMatch(match) {
                 case 2:
                     _a = _c.sent(), profile1 = _a[0], profile2 = _a[1];
                     return [4 /*yield*/, Promise.all([
-                            fetchQuestionnaireAnswers(activity.id, match.profile_id_1),
-                            fetchQuestionnaireAnswers(activity.id, match.profile_id_2)
+                            fetchQuestionnaireAnswers(event.id, match.profile_id_1),
+                            fetchQuestionnaireAnswers(event.id, match.profile_id_2)
                         ])];
                 case 3:
                     _b = _c.sent(), answers1 = _b[0], answers2 = _b[1];
@@ -224,7 +224,7 @@ function processMatch(match) {
                             otherProfile: profile2,
                             selfAnswers: answers1,
                             otherAnswers: answers2,
-                            activity: activity
+                            event: event
                         })];
                 case 4:
                     res = _c.sent();
@@ -238,7 +238,7 @@ function processMatch(match) {
                             otherProfile: profile1,
                             selfAnswers: answers2,
                             otherAnswers: answers1,
-                            activity: activity
+                            event: event
                         })];
                 case 6:
                     res = _c.sent();

@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Define the activity structure returned from Supabase
-interface UserActivity {
+// Define the event structure returned from Supabase
+interface UserEvent {
   id: number;
   title: string;
   start_time: string;
@@ -30,8 +30,8 @@ interface UserActivity {
 const MatchesPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [selectedActivity, setSelectedActivity] = useState<string>("all");
-  const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<string>("all");
+  const [userActivities, setUserActivities] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("recommended");
 
@@ -53,11 +53,11 @@ const MatchesPage = () => {
         
         const now = new Date().toISOString();
         
-        // Query activity_participant table to get activities the user participates in
+        // Query event_participant table to get activities the user participates in
         const { data, error } = await supabase
-          .from('activity_participant')
+          .from('event_participant')
           .select(`
-            activity:activity_id (
+            event:event_id (
               id,
               title,
               start_time,
@@ -74,25 +74,25 @@ const MatchesPage = () => {
         }
         
         // Extract activities from the response
-        const activities: UserActivity[] = [];
+        const activities: UserEvent[] = [];
         data.forEach((item: any) => {
-          if (item.activity && typeof item.activity === 'object') {
-            activities.push(item.activity as UserActivity);
+          if (item.event && typeof item.event === 'object') {
+            activities.push(item.event as UserEvent);
           }
         });
         
         // Find current/ongoing activities
-        const ongoingActivities = activities.filter(activity => {
-          const isStarted = new Date(activity.start_time) <= new Date(now);
-          const isNotEnded = !activity.end_time || new Date(activity.end_time) > new Date(now);
+        const ongoingActivities = activities.filter(event => {
+          const isStarted = new Date(event.start_time) <= new Date(now);
+          const isNotEnded = !event.end_time || new Date(event.end_time) > new Date(now);
           return isStarted && isNotEnded;
         });
         
         setUserActivities(activities);
         
-        // Set first ongoing activity as default selection
+        // Set first ongoing event as default selection
         if (ongoingActivities.length > 0) {
-          setSelectedActivity(ongoingActivities[0].id.toString());
+          setSelectedEvent(ongoingActivities[0].id.toString());
         }
       } catch (error) {
         console.error("Error fetching activities:", error);
@@ -128,45 +128,45 @@ const MatchesPage = () => {
             <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center mb-4">
               <h2 className="text-xl font-medium">Recommended Profiles</h2>
               <Select 
-                value={selectedActivity} 
-                onValueChange={setSelectedActivity}
+                value={selectedEvent} 
+                onValueChange={setSelectedEvent}
               >
                 <SelectTrigger className="w-full sm:w-[250px]">
-                  <SelectValue placeholder="Select an activity" />
+                  <SelectValue placeholder="Select an event" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Activities</SelectItem>
-                  {userActivities.map(activity => (
-                    <SelectItem key={activity.id} value={activity.id.toString()}>
-                      {activity.title}
+                  {userActivities.map(event => (
+                    <SelectItem key={event.id} value={event.id.toString()}>
+                      {event.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} />
+            <MatchList eventId={selectedEvent === "all" ? undefined : selectedEvent} />
           </TabsContent>
           <TabsContent value="history">
             <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center mb-4">
               <h2 className="text-xl font-medium">Match History</h2>
               <Select 
-                value={selectedActivity} 
-                onValueChange={setSelectedActivity}
+                value={selectedEvent} 
+                onValueChange={setSelectedEvent}
               >
                 <SelectTrigger className="w-full sm:w-[250px]">
-                  <SelectValue placeholder="Select an activity" />
+                  <SelectValue placeholder="Select an event" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Activities</SelectItem>
-                  {userActivities.map(activity => (
-                    <SelectItem key={activity.id} value={activity.id.toString()}>
-                      {activity.title}
+                  {userActivities.map(event => (
+                    <SelectItem key={event.id} value={event.id.toString()}>
+                      {event.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <MatchList activityId={selectedActivity === "all" ? undefined : selectedActivity} historyMode />
+            <MatchList eventId={selectedEvent === "all" ? undefined : selectedEvent} historyMode />
           </TabsContent>
         </Tabs>
       </div>

@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/sonner";
 const ParticipantQuestionnairePage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const { activityId } = useParams<{ activityId: string }>();
+  const { eventId } = useParams<{ eventId: string }>();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -31,12 +31,12 @@ const ParticipantQuestionnairePage = () => {
     );
   }
 
-  if (!activityId) {
+  if (!eventId) {
     return (
       <PageLayout>
         <div className="space-y-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">Missing Activity</h1>
-          <p>Could not find the requested activity.</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">Missing Event</h1>
+          <p>Could not find the requested event.</p>
         </div>
       </PageLayout>
     );
@@ -45,12 +45,12 @@ const ParticipantQuestionnairePage = () => {
   return (
     <PageLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-primary">Activity Questionnaire</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-primary">Event Questionnaire</h1>
         <p className="text-gray-600 text-lg max-w-2xl">
           Complete this questionnaire to help us find great matches for you at this event.
         </p>
         
-        <QuestionnaireForm activityId={activityId} isParticipant={true} />
+        <QuestionnaireForm eventId={eventId} isParticipant={true} />
       </div>
     </PageLayout>
   );

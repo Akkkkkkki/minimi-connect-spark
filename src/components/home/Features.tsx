@@ -1,15 +1,14 @@
-
 import { Users, Calendar, Activity, Zap } from "lucide-react";
 
 const features = [
   {
     icon: Users,
     title: "Multiple Connection Types",
-    description: "Find matches for dating, professional networking, or shared activities all in one platform."
+    description: "Find matches for dating, professional networking, or shared events all in one platform."
   },
   {
     icon: Calendar,
-    title: "Activity-Based Matching",
+    title: "Event-Based Matching",
     description: "Join events and get matched with compatible participants based on your preferences and answers."
   },
   {
@@ -20,7 +19,7 @@ const features = [
   {
     icon: Zap,
     title: "Multiple Matching Rounds",
-    description: "Participate in several matching rounds within a single activity for more opportunities."
+    description: "Participate in several matching rounds within a single event for more opportunities."
   }
 ];
 

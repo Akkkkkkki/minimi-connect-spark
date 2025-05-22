@@ -17,10 +17,10 @@ export interface Profile {
   updatedAt: string;
 }
 
-// Activity Types
-export type ActivityType = "social" | "professional" | "dating" | "hobby" | "sports";
+// Event Types
+export type EventType = "social" | "professional" | "dating" | "hobby" | "sports";
 
-export interface Activity {
+export interface Event {
   id: string;
   creatorId: string;
   title: string;
@@ -28,7 +28,7 @@ export interface Activity {
   location: string;
   startTime: string;
   endTime?: string;
-  activityType: ActivityType;
+  eventType: EventType;
   tags?: string[];
   createdAt: string;
   updatedAt: string;
@@ -48,7 +48,7 @@ export interface Question {
 
 export interface Questionnaire {
   id: string;
-  activityId: string;
+  eventId: string;
   title: string;
   description?: string;
   questions: Question[];
@@ -63,9 +63,9 @@ export interface QuestionnaireResponse {
 // Participant Types
 export type ParticipantStatus = "pending" | "completed";
 
-export interface ActivityParticipant {
+export interface EventParticipant {
   id: string;
-  activityId: string;
+  eventId: string;
   profileId: string;
   status: ParticipantStatus;
   createdAt: string;
@@ -77,7 +77,7 @@ export type MatchRoundStatus = "scheduled" | "completed" | "cancelled";
 
 export interface MatchRound {
   id: string;
-  activityId: string;
+  eventId: string;
   name: string;
   scheduledTime: string;
   status: MatchRoundStatus;

@@ -50,12 +50,12 @@ async function fetchProfile(profileId: string) {
   return data;
 }
 
-async function fetchQuestionnaireAnswers(activityId: string, profileId: string) {
+async function fetchQuestionnaireAnswers(eventId: string, profileId: string) {
   // Find participant id
   const { data: participant, error: partError } = await supabase
-    .from('activity_participant')
+    .from('event_participant')
     .select('id')
-    .eq('activity_id', activityId)
+    .eq('event_id', eventId)
     .eq('profile_id', profileId)
     .single();
   if (partError || !participant) return null;
@@ -68,12 +68,12 @@ async function fetchQuestionnaireAnswers(activityId: string, profileId: string) 
   return answers;
 }
 
-function buildPrompt({ selfProfile, otherProfile, selfAnswers, otherAnswers, activity }) {
-  return `You are an expert matchmaker. Given the following two user profiles and their answers to the event questionnaire, write a short, friendly reason why the first user would be a good match for the second user in this activity, and suggest a fun icebreaker for their first conversation.\n\nActivity: ${activity.title}\n\nUser A (the one receiving this message):\n${JSON.stringify(selfProfile, null, 2)}\n\nTheir answers:\n${JSON.stringify(selfAnswers, null, 2)}\n\nUser B (their match):\n${JSON.stringify(otherProfile, null, 2)}\n\nTheir answers:\n${JSON.stringify(otherAnswers, null, 2)}\n\nRespond in JSON with keys 'reason' and 'icebreaker'.`;
+function buildPrompt({ selfProfile, otherProfile, selfAnswers, otherAnswers, event }) {
+  return `You are an expert matchmaker. Given the following two user profiles and their answers to the event questionnaire, write a short, friendly reason why the first user would be a good match for the second user in this event, and suggest a fun icebreaker for their first conversation.\n\nEvent: ${event.title}\n\nUser A (the one receiving this message):\n${JSON.stringify(selfProfile, null, 2)}\n\nTheir answers:\n${JSON.stringify(selfAnswers, null, 2)}\n\nUser B (their match):\n${JSON.stringify(otherProfile, null, 2)}\n\nTheir answers:\n${JSON.stringify(otherAnswers, null, 2)}\n\nRespond in JSON with keys 'reason' and 'icebreaker'.`;
 }
 
-async function generateReasonAndIcebreaker({ selfProfile, otherProfile, selfAnswers, otherAnswers, activity }) {
-  const prompt = buildPrompt({ selfProfile, otherProfile, selfAnswers, otherAnswers, activity });
+async function generateReasonAndIcebreaker({ selfProfile, otherProfile, selfAnswers, otherAnswers, event }) {
+  const prompt = buildPrompt({ selfProfile, otherProfile, selfAnswers, otherAnswers, event });
   const completion = await openai.chat.completions.create({
     model: MODEL,
     messages: [{ role: 'user', content: prompt }],
@@ -93,30 +93,30 @@ async function generateReasonAndIcebreaker({ selfProfile, otherProfile, selfAnsw
   }
 }
 
-async function fetchActivity(roundId: number) {
+async function fetchEvent(roundId: number) {
   const { data: round, error } = await supabase
     .from('match_round')
-    .select('activity_id, activity:activity_id (id, title)')
+    .select('event_id, event:event_id (id, title)')
     .eq('id', roundId)
     .single();
   if (error) throw error;
-  // round.activity is either an object or an array; ensure we return the object
-  if (Array.isArray(round.activity)) {
-    return round.activity[0];
+  // round.event is either an object or an array; ensure we return the object
+  if (Array.isArray(round.event)) {
+    return round.event[0];
   }
-  return round.activity;
+  return round.event;
 }
 
 async function processMatch(match) {
   try {
-    const activity = await fetchActivity(match.round_id);
+    const event = await fetchEvent(match.round_id);
     const [profile1, profile2] = await Promise.all([
       fetchProfile(match.profile_id_1),
       fetchProfile(match.profile_id_2)
     ]);
     const [answers1, answers2] = await Promise.all([
-      fetchQuestionnaireAnswers(activity.id, match.profile_id_1),
-      fetchQuestionnaireAnswers(activity.id, match.profile_id_2)
+      fetchQuestionnaireAnswers(event.id, match.profile_id_1),
+      fetchQuestionnaireAnswers(event.id, match.profile_id_2)
     ]);
     // 1 -> 2
     let update: any = {};
@@ -126,7 +126,7 @@ async function processMatch(match) {
         otherProfile: profile2,
         selfAnswers: answers1,
         otherAnswers: answers2,
-        activity
+        event
       });
       update.match_reason_1 = res.reason;
       update.icebreaker_1 = res.icebreaker;
@@ -138,7 +138,7 @@ async function processMatch(match) {
         otherProfile: profile1,
         selfAnswers: answers2,
         otherAnswers: answers1,
-        activity
+        event
       });
       update.match_reason_2 = res.reason;
       update.icebreaker_2 = res.icebreaker;

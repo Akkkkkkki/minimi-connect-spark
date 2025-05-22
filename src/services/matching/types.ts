@@ -24,18 +24,18 @@ export interface UserProfile {
   softPreferences: string[];  // Soft preference requirements
 }
 
-export interface ActivityQuestionnaire {
+export interface EventQuestionnaire {
   id: string;
-  activityId: string;
+  eventId: string;
   questions: QuestionnaireQuestion[];
   attributes: QuestionAttribute[];
 }
 
 export interface MatchingOptions {
   userId: string;
-  activityId: string;
+  eventId: string;
   targetUsers: UserProfile[];
-  questionnaire: ActivityQuestionnaire;
+  questionnaire: EventQuestionnaire;
   model?: string;
   temperature?: number;
   maxResults?: number;

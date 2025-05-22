@@ -12,9 +12,9 @@ export const MATCHING_PROMPTS = {
   GENERATE_EXPLANATION: `Based on the following user similarities:
   {similarities}
   
-  Generate a clear explanation of why these users are a good match for the activity {activityId}. Focus on their shared interests and personality traits.`,
+  Generate a clear explanation of why these users are a good match for the event {eventId}. Focus on their shared interests and personality traits.`,
 
-  RANK_CANDIDATES: `Rank the following candidate users for the activity {activityId} based on their compatibility with the main user {userId}:
+  RANK_CANDIDATES: `Rank the following candidate users for the event {eventId} based on their compatibility with the main user {userId}:
   {candidates}
   
   Return a ranked list with scores from 0-100, where 100 is the best match.`,

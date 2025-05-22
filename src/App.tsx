@@ -6,12 +6,12 @@ import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/context/AuthContext";
-import AllActivitiesPage from "@/pages/ActivitiesPage";
-import ActivityDetailsPage from "@/pages/ActivityDetailsPage";
+import AllEventsPage from "@/pages/EventsPage";
+import EventDetailsPage from "@/pages/EventDetailsPage";
 import ProfileDashboard from "@/pages/ProfileDashboard";
-import MyActivitiesPage from "@/pages/MyActivitiesPage";
-import CreateActivity from "@/pages/CreateActivity";
-import ActivityManagement from "@/pages/ActivityManagement";
+import MyEventsPage from "@/pages/MyEventsPage";
+import CreateEvent from "@/pages/CreateEvent";
+import EventManagement from "@/pages/EventManagement";
 import MatchResults from "@/pages/MatchResults";
 import MatchHistoryPage from "@/pages/MatchHistoryPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
@@ -20,7 +20,7 @@ import ParticipantQuestionnairePage from "./pages/ParticipantQuestionnairePage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import { useRequireProfileCompletion } from "@/hooks/useRequireProfileCompletion";
 import { Suspense } from "react";
-import EditActivity from "./pages/EditActivity";
+import EditEvent from "./pages/EditEvent";
 import MatchesPage from "@/pages/MatchResults";
 
 function RequireProfileCompletion({ children }: { children: React.ReactNode }) {
@@ -52,17 +52,17 @@ function App() {
                   <Index />
                 </RequireProfileCompletion>
               } />
-              <Route path="/activities" element={
+              <Route path="/events" element={
                 <RequireProfileCompletion>
-                  <AllActivitiesPage />
+                  <AllEventsPage />
                 </RequireProfileCompletion>
               } />
-              <Route path="/activities/:activityId" element={
+              <Route path="/events/:eventId" element={
                 <RequireProfileCompletion>
-                  <ActivityDetailsPage />
+                  <EventDetailsPage />
                 </RequireProfileCompletion>
               } />
-              <Route path="/activities/:activityId/questionnaire" element={
+              <Route path="/events/:eventId/questionnaire" element={
                 <RequireProfileCompletion>
                   <ParticipantQuestionnairePage />
                 </RequireProfileCompletion>
@@ -72,23 +72,23 @@ function App() {
                   <ProfileDashboard />
                 </RequireProfileCompletion>
               } />
-              <Route path="/my-activities" element={
+              <Route path="/my-events" element={
                 <RequireProfileCompletion>
-                  <MyActivitiesPage />
+                  <MyEventsPage />
                 </RequireProfileCompletion>
               } />
-              <Route path="/create-activity" element={
+              <Route path="/create-event" element={
                 <RequireProfileCompletion>
-                  <CreateActivity />
+                  <CreateEvent />
                 </RequireProfileCompletion>
               } />
-              <Route path="/edit-activity/:id" element={<EditActivity />} />
-              <Route path="/activity-management" element={
+              <Route path="/edit-event/:id" element={<EditEvent />} />
+              <Route path="/event-management" element={
                 <RequireProfileCompletion>
-                  <ActivityManagement />
+                  <EventManagement />
                 </RequireProfileCompletion>
               } />
-              <Route path="/activity-management/:activityId/questionnaire" element={
+              <Route path="/event-management/:eventId/questionnaire" element={
                 <RequireProfileCompletion>
                   <QuestionnaireBuilderPage />
                 </RequireProfileCompletion>

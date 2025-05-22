@@ -25,15 +25,15 @@ const Header = () => {
 
   const navItems = [
     { label: "Home", path: "/" },
-    { label: "All Activities", path: "/activities" },
+    { label: "All Events", path: "/events" },
     { label: "How It Works", path: "/how-it-works" }
   ];
 
   const authenticatedNavItems = [
     { label: "Profile", path: "/profile" },
-    { label: "My Activities", path: "/my-activities" },
+    { label: "My Events", path: "/my-events" },
     { label: "Matches", path: "/matches" },
-    { label: "Organizer Portal", path: "/activity-management" }
+    { label: "Organizer Portal", path: "/event-management" }
   ];
 
   const toggleMenu = () => {
@@ -118,13 +118,13 @@ const Header = () => {
                       <DropdownMenuItem onClick={() => navigate("/profile")}>
                         Profile
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/my-activities")}>
-                        My Activities
+                      <DropdownMenuItem onClick={() => navigate("/my-events")}>
+                        My Events
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/matches")}>
                         Matches
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/activity-management")}>
+                      <DropdownMenuItem onClick={() => navigate("/event-management")}>
                         Organizer Portal
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

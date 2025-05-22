@@ -1,10 +1,7 @@
-// Import the Supabase client from the integrations directory
+// Canonical Supabase client import. Do not import from anywhere else.
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { getEnv } from './env';
-
-// Initialize the Supabase client
-const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = getEnv();
+import type { Database } from '@/integrations/supabase/types';
 
 // Auth helper functions
 export const signInWithEmail = async (email: string, password: string) => {
@@ -63,18 +60,21 @@ export const createUserProfile = async (
   }
 ) => {
   try {
+    // Use the generated type for profile insert
+    const insertPayload: Database['public']['Tables']['profile']['Insert'] = {
+      id: userId,
+      first_name: profileData.first_name,
+      last_name: profileData.last_name,
+      gender: profileData.gender,
+      birth_month: profileData.birth_month !== null ? Number(profileData.birth_month) : null,
+      birth_year: profileData.birth_year !== null ? Number(profileData.birth_year) : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted: false,
+    };
     const { error } = await supabase
       .from('profile')
-      .insert([{
-        id: userId,
-        first_name: profileData.first_name,
-        last_name: profileData.last_name,
-        gender: profileData.gender,
-        birth_month: profileData.birth_month,
-        birth_year: profileData.birth_year,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }]);
+      .insert([insertPayload]);
       
     if (error) throw error;
     return { success: true, error: null };

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -10,13 +9,13 @@ const steps = [
   },
   {
     number: "02",
-    title: "Explore activities",
-    description: "Browse through various events and activities that match your interests and location."
+    title: "Explore events",
+    description: "Browse through various events that match your interests and location."
   },
   {
     number: "03",
     title: "Answer questionnaires",
-    description: "Complete activity-specific questionnaires to help our algorithm find compatible matches."
+    description: "Complete event-specific questionnaires to help our algorithm find compatible matches."
   },
   {
     number: "04",

@@ -1,4 +1,3 @@
-
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -14,13 +13,13 @@ const Hero = () => {
               <span className="bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text"> match your vibe</span>
             </h1>
             <p className="mt-6 text-lg md:text-xl text-gray-600 max-w-2xl">
-              Find compatible connections for romance, professional networking, or shared activities 
+              Find compatible connections for romance, professional networking, or shared events 
               with MINIMI's intelligent matching platform.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
-              <Link to="/activities">
+              <Link to="/events">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
-                  Browse Activities <ArrowRight className="ml-2 h-4 w-4" />
+                  Browse Events <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/signup">
@@ -40,13 +39,13 @@ const Hero = () => {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-primary">Mountain Hiking Group</h3>
-                    <span className="px-2 py-1 text-xs font-medium bg-accent/10 text-accent rounded-full">Activity</span>
+                    <span className="px-2 py-1 text-xs font-medium bg-accent/10 text-accent rounded-full">Event</span>
                   </div>
                   
                   <div className="space-y-4">
                     <div className="h-48 bg-gray-200 rounded-lg overflow-hidden">
                       <div className="w-full h-full bg-gradient-to-br from-accent/30 to-accent/10 flex items-center justify-center text-accent">
-                        Activity Image
+                        Event Image
                       </div>
                     </div>
                     
@@ -66,7 +65,7 @@ const Hero = () => {
                     </div>
                     
                     <Button className="w-full bg-accent hover:bg-accent/90">
-                      Join Activity
+                      Join Event
                     </Button>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { MatchRound, Activity, ActivityParticipant } from '@/utils/supabaseTypes';
+import type { MatchRound, Event, EventParticipant } from '@/utils/supabaseTypes';
 import { MatchingService } from './index';
 
 export class MatchRoundService {
@@ -9,11 +9,11 @@ export class MatchRoundService {
     this.matchingService = new MatchingService();
   }
 
-  async createMatchRound(activityId: string, name: string, scheduledTime: string): Promise<MatchRound> {
+  async createMatchRound(eventId: string, name: string, scheduledTime: string): Promise<MatchRound> {
     const { data, error } = await supabase
       .from('match_round')
       .insert({
-        activity_id: parseInt(activityId),
+        event_id: parseInt(eventId),
         name,
         trigger_time: Math.floor(new Date(scheduledTime).getTime() / 1000),
         trigger_type: 'scheduled',
@@ -29,11 +29,11 @@ export class MatchRoundService {
     return data;
   }
 
-  async getMatchRounds(activityId: string): Promise<MatchRound[]> {
+  async getMatchRounds(eventId: string): Promise<MatchRound[]> {
     const { data, error } = await supabase
       .from('match_round')
       .select('*')
-      .eq('activity_id', activityId)
+      .eq('event_id', eventId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -43,11 +43,11 @@ export class MatchRoundService {
     return data || [];
   }
 
-  async getParticipants(activityId: string): Promise<ActivityParticipant[]> {
+  async getParticipants(eventId: string): Promise<EventParticipant[]> {
     const { data, error } = await supabase
-      .from('activity_participant')
+      .from('event_participant')
       .select('*')
-      .eq('activity_id', activityId)
+      .eq('event_id', eventId)
       .eq('status', 'completed');
 
     if (error) {
@@ -74,8 +74,8 @@ export class MatchRoundService {
         throw new Error('Match round is not in pending state');
       }
 
-      // Get all participants for this activity
-      const participants = await this.getParticipants(matchRound.activity_id);
+      // Get all participants for this event
+      const participants = await this.getParticipants(matchRound.event_id);
       if (participants.length < 2) {
         throw new Error('Not enough participants to run matching');
       }
@@ -90,11 +90,11 @@ export class MatchRoundService {
         throw new Error(`Failed to get profiles: ${profileError.message}`);
       }
 
-      // Get the questionnaire for this activity
+      // Get the questionnaire for this event
       const { data: questionnaire, error: questionnaireError } = await supabase
-        .from('activity_questionnaire')
+        .from('event_questionnaire')
         .select('*')
-        .eq('activity_id', matchRound.activity_id)
+        .eq('event_id', matchRound.event_id)
         .single();
 
       if (questionnaireError) {
@@ -104,7 +104,7 @@ export class MatchRoundService {
       // Run the matching algorithm
       const matchingResult = await this.matchingService.matchUsers({
         userId: participants[0].profile_id, // Use first participant as reference
-        activityId: matchRound.activity_id,
+        eventId: matchRound.event_id,
         targetUsers: profiles.map(profile => ({
           userId: profile.id,
           name: profile.name,
@@ -114,7 +114,7 @@ export class MatchRoundService {
           interests: profile.interests || [], // STUB: Replace with actual extraction from questionnaire answers
           preferences: profile.preferences || [], // STUB: Replace with actual extraction from questionnaire answers
           personalityTraits: profile.personalityTraits || [], // STUB: Replace with actual extraction from questionnaire answers
-          activities: [matchRound.activity_id],
+          activities: [matchRound.event_id],
           answers: profile.answers || {}, // STUB: Replace with actual extraction from questionnaire answers
           hardFilters: [], // STUB: Replace with actual extraction from questionnaire attributes
           softPreferences: [] // STUB: Replace with actual extraction from questionnaire attributes

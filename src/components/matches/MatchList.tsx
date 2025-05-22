@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MatchListProps {
-  activityId?: string;
+  eventId?: string;
   historyMode?: boolean;
 }
 
@@ -30,13 +30,13 @@ interface Profile {
   avatar_url: string | null;
 }
 
-interface ActivityData {
+interface EventData {
   title: string;
   id: string | number;
 }
 
 interface RoundData {
-  activity: ActivityData;
+  event: EventData;
 }
 
 interface MatchData {
@@ -54,8 +54,8 @@ interface MatchData {
 interface ProcessedMatch {
   id: string;
   name: string;
-  activityName: string;
-  activityId: string;
+  eventName: string;
+  eventId: string;
   matchDate: string;
   matchScore: number;
   matchReason: string;
@@ -67,7 +67,7 @@ interface ProcessedMatch {
   shouldShow: boolean;
 }
 
-const MatchList = ({ activityId, historyMode }: MatchListProps) => {
+const MatchList = ({ eventId, historyMode }: MatchListProps) => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<ProcessedMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,14 +81,14 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
       try {
         setLoading(true);
         
-        // Get rounds for the activity if specified
+        // Get rounds for the event if specified
         let roundIds: number[] = [];
         
-        if (activityId && activityId !== 'all') {
+        if (eventId && eventId !== 'all') {
           const { data: rounds, error: roundsError } = await supabase
             .from('match_round')
             .select('id')
-            .eq('activity_id', parseInt(activityId));
+            .eq('event_id', parseInt(eventId));
             
           if (roundsError) throw roundsError;
           
@@ -151,22 +151,22 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
           
         if (profilesError) throw profilesError;
         
-        // Get activity information from rounds
-        const roundToActivityMap = new Map<number, { id: number; title: string }>();
+        // Get event information from rounds
+        const roundToEventMap = new Map<number, { id: number; title: string }>();
         for (const roundId of new Set(matchesData.map(m => m.round_id))) {
           const { data: round } = await supabase
             .from('match_round')
-            .select('activity_id, name, activity:activity_id (id, title)')
+            .select('event_id, name, event:event_id (id, title)')
             .eq('id', roundId)
             .single();
             
-          if (round && round.activity && Array.isArray(round.activity)) {
-            // Cast the activity data to the correct type
-            const activityData: { id: number; title: string } = {
-              id: typeof round.activity[0].id === 'number' ? round.activity[0].id : Number(round.activity[0].id),
-              title: String(round.activity[0].title || '')
+          if (round && round.event && Array.isArray(round.event)) {
+            // Cast the event data to the correct type
+            const eventData: { id: number; title: string } = {
+              id: typeof round.event[0].id === 'number' ? round.event[0].id : Number(round.event[0].id),
+              title: String(round.event[0].title || '')
             };
-            roundToActivityMap.set(roundId, activityData);
+            roundToEventMap.set(roundId, eventData);
           }
         }
         
@@ -184,9 +184,9 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
           
           if (!otherUserProfile) continue; // Skip if profile not found
           
-          // Get the activity info
-          const activity = roundToActivityMap.get(match.round_id);
-          if (!activity) continue; // Skip if activity not found
+          // Get the event info
+          const event = roundToEventMap.get(match.round_id);
+          if (!event) continue; // Skip if event not found
           
           // Check feedback status
           const myFeedback = feedbackData?.find(f => f.match_id === match.id && f.profile_id === user.id);
@@ -201,26 +201,26 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
           }
           
           // For the Matches tab, only show mutual positive matches
-          const shouldShow = !activityId || otherUserFeedbackStatus === 'positive' && hasPositiveFeedback;
+          const shouldShow = !eventId || otherUserFeedbackStatus === 'positive' && hasPositiveFeedback;
           
-          if (activityId && !shouldShow) continue; // Skip non-mutual matches in activity view
+          if (eventId && !shouldShow) continue; // Skip non-mutual matches in event view
           
           // Determine which reason/icebreaker to show
           let matchReason = '';
           let icebreaker = '';
           if (match.profile_id_1 === user.id) {
             matchReason = match.match_reason_1 || 'You seem to be compatible based on your answers.';
-            icebreaker = match.icebreaker_1 || 'What brings you to this activity?';
+            icebreaker = match.icebreaker_1 || 'What brings you to this event?';
           } else {
             matchReason = match.match_reason_2 || 'You seem to be compatible based on your answers.';
-            icebreaker = match.icebreaker_2 || 'What brings you to this activity?';
+            icebreaker = match.icebreaker_2 || 'What brings you to this event?';
           }
           
           const processedMatch: ProcessedMatch = {
             id: match.id.toString(),
             name: `${otherUserProfile.first_name || ''} ${otherUserProfile.last_name || ''}`.trim() || 'User',
-            activityName: activity.title || 'Unnamed Activity',
-            activityId: activity.id.toString(),
+            eventName: event.title || 'Unnamed Event',
+            eventId: event.id.toString(),
             matchDate: new Date(match.created_at).toISOString().split('T')[0],
             matchScore: Math.round(Number(match.match_score) * 100), // Convert decimal to percentage
             matchReason,
@@ -248,7 +248,7 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
     };
     
     fetchMatches();
-  }, [user, activityId]);
+  }, [user, eventId]);
 
   const handlePositiveFeedback = async (matchId: string) => {
     try {
@@ -395,7 +395,7 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
   let displayMatches = matches;
   if (historyMode) {
     displayMatches = matches.filter(m => m.hasPositiveFeedback && m.otherUserFeedback === 'positive');
-  } else if (activityId) {
+  } else if (eventId) {
     displayMatches = matches.filter(m => m.shouldShow);
   }
 
@@ -429,16 +429,16 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
       <Card>
         <CardContent className="pt-6 text-center py-12">
           <p className="text-muted-foreground">
-            {activityId && activityId !== 'all'
-              ? "No mutual matches found for this activity."
+            {eventId && eventId !== 'all'
+              ? "No mutual matches found for this event."
               : "You don't have any matches yet."}
           </p>
           <p className="mt-2">
-            {activityId && activityId !== 'all'
-              ? "Try selecting a different activity or check back later."
+            {eventId && eventId !== 'all'
+              ? "Try selecting a different event or check back later."
               : "Join some activities to start matching with others!"}
           </p>
-          {(!activityId || activityId === 'all') && (
+          {(!eventId || eventId === 'all') && (
             <Button className="mt-4" asChild>
               <a href="/activities">Browse Activities</a>
             </Button>
@@ -477,7 +477,7 @@ const MatchList = ({ activityId, historyMode }: MatchListProps) => {
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Activity: {match.activityName}
+                        Event: {match.eventName}
                       </p>
                       <div className="bg-muted/50 p-3 rounded-md my-2">
                         <p className="text-sm">{match.matchReason}</p>

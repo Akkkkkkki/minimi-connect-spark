@@ -1,4 +1,3 @@
-
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -12,7 +11,7 @@ const CTA = () => {
             Ready to find your meaningful connections?
           </h2>
           <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10">
-            Join thousands of users who are already finding compatible matches for dating, networking, and activities.
+            Join thousands of users who are already finding compatible matches for dating, networking, and events.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link to="/signup">
@@ -20,9 +19,9 @@ const CTA = () => {
                 Create Your Free Account <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/activities">
+            <Link to="/events">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 w-full sm:w-auto">
-                Browse Activities
+                Browse Events
               </Button>
             </Link>
           </div>

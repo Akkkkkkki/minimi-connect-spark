@@ -9,9 +9,9 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      activity: {
+      event: {
         Row: {
-          activity_type: string
+          event_type: string
           applicants_max_number: number | null
           city: string | null
           country: string | null
@@ -37,7 +37,7 @@ export type Database = {
           version: number | null
         }
         Insert: {
-          activity_type: string
+          event_type: string
           applicants_max_number?: number | null
           city?: string | null
           country?: string | null
@@ -63,7 +63,7 @@ export type Database = {
           version?: number | null
         }
         Update: {
-          activity_type?: string
+          event_type?: string
           applicants_max_number?: number | null
           city?: string | null
           country?: string | null
@@ -90,9 +90,9 @@ export type Database = {
         }
         Relationships: []
       }
-      activity_feedback: {
+      event_feedback: {
         Row: {
-          activity_id: string | null
+          event_id: string | null
           comment: string | null
           created_at: string
           id: number
@@ -100,7 +100,7 @@ export type Database = {
           rating: number
         }
         Insert: {
-          activity_id?: string | null
+          event_id?: string | null
           comment?: string | null
           created_at?: string
           id?: never
@@ -108,7 +108,7 @@ export type Database = {
           rating: number
         }
         Update: {
-          activity_id?: string | null
+          event_id?: string | null
           comment?: string | null
           created_at?: string
           id?: never
@@ -117,14 +117,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "activity_feedback_activity_id_new_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "event_feedback_event_id_new_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "activity"
+            referencedRelation: "event"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "activity_feedback_profile_id_fkey"
+            foreignKeyName: "event_feedback_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profile"
@@ -132,9 +132,9 @@ export type Database = {
           },
         ]
       }
-      activity_match_trigger_rule: {
+      event_match_trigger_rule: {
         Row: {
-          activity_id: string | null
+          event_id: string | null
           create_time: string | null
           create_user_id: string | null
           created_at: string | null
@@ -152,7 +152,7 @@ export type Database = {
           version: number | null
         }
         Insert: {
-          activity_id?: string | null
+          event_id?: string | null
           create_time?: string | null
           create_user_id?: string | null
           created_at?: string | null
@@ -170,7 +170,7 @@ export type Database = {
           version?: number | null
         }
         Update: {
-          activity_id?: string | null
+          event_id?: string | null
           create_time?: string | null
           create_user_id?: string | null
           created_at?: string | null
@@ -189,17 +189,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "activity_match_trigger_rule_activity_id_new_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "event_match_trigger_rule_event_id_new_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "activity"
+            referencedRelation: "event"
             referencedColumns: ["id"]
           },
         ]
       }
-      activity_participant: {
+      event_participant: {
         Row: {
-          activity_id: string | null
+          event_id: string | null
           created_at: string
           id: number
           match_type: string | null
@@ -208,7 +208,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          activity_id?: string | null
+          event_id?: string | null
           created_at?: string
           id?: never
           match_type?: string | null
@@ -217,7 +217,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          activity_id?: string | null
+          event_id?: string | null
           created_at?: string
           id?: never
           match_type?: string | null
@@ -227,63 +227,63 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "activity_participant_activity_id_new_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "event_participant_event_id_new_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "activity"
+            referencedRelation: "event"
             referencedColumns: ["id"]
           },
         ]
       }
-      activity_questionnaire: {
+      event_questionnaire: {
         Row: {
-          activity_id: string | null;
+          event_id: string | null;
           id: string;
           version: number | null;
         }
         Insert: {
-          activity_id?: string | null;
+          event_id?: string | null;
           id?: string;
           version?: number | null;
         }
         Update: {
-          activity_id?: string | null;
+          event_id?: string | null;
           id?: string;
           version?: number | null;
         }
         Relationships: [
           {
-            foreignKeyName: "activity_questionnaire_activity_id_new_fkey",
-            columns: ["activity_id"],
+            foreignKeyName: "event_questionnaire_event_id_new_fkey",
+            columns: ["event_id"],
             isOneToOne: false,
-            referencedRelation: "activity",
+            referencedRelation: "event",
             referencedColumns: ["id"]
           },
         ]
       }
-      activity_tag: {
+      event_tag: {
         Row: {
-          activity_id: string | null
+          event_id: string | null
           tag_id: number
         }
         Insert: {
-          activity_id?: string | null
+          event_id?: string | null
           tag_id: number
         }
         Update: {
-          activity_id?: string | null
+          event_id?: string | null
           tag_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "activity_tag_activity_id_new_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "event_tag_event_id_new_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "activity"
+            referencedRelation: "event"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "activity_tag_tag_id_fkey"
+            foreignKeyName: "event_tag_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "tag"
@@ -420,7 +420,7 @@ export type Database = {
       }
       match_round: {
         Row: {
-          activity_id: string | null
+          event_id: string | null
           created_at: string
           id: number
           name: string
@@ -429,7 +429,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          activity_id?: string | null
+          event_id?: string | null
           created_at?: string
           id?: never
           name: string
@@ -438,7 +438,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          activity_id?: string | null
+          event_id?: string | null
           created_at?: string
           id?: never
           name?: string
@@ -448,10 +448,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "match_round_activity_id_new_fkey"
-            columns: ["activity_id"]
+            foreignKeyName: "match_round_event_id_new_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "activity"
+            referencedRelation: "event"
             referencedColumns: ["id"]
           },
         ]
@@ -580,7 +580,7 @@ export type Database = {
             foreignKeyName: "questionnaire_response_participant_id_fkey"
             columns: ["participant_id"]
             isOneToOne: false
-            referencedRelation: "activity_participant"
+            referencedRelation: "event_participant"
             referencedColumns: ["id"]
           },
         ]

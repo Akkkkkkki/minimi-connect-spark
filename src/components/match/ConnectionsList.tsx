@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/ui/sonner";
 
 interface MatchesListProps {
-  activityId: string;
+  eventId: string;
 }
 
 interface Profile {
@@ -49,7 +49,7 @@ function getValidAvatarUrl(avatar?: string | null): string {
   return `https://uiswjpjgxsrnfxerzbrw.supabase.co/storage/v1/object/public/user/profile/${avatar}`;
 }
 
-const MatchesList = ({ activityId }: MatchesListProps) => {
+const MatchesList = ({ eventId }: MatchesListProps) => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,12 +79,12 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
           `)
           .eq('profile_id_1', user.id);
           
-        if (activityId && activityId !== 'all') {
-          // First get the round ids for the activity
+        if (eventId && eventId !== 'all') {
+          // First get the round ids for the event
           const { data: rounds, error: roundsError } = await supabase
             .from('match_round')
             .select('id')
-            .eq('activity_id', parseInt(activityId));
+            .eq('event_id', parseInt(eventId));
             
           if (roundsError) throw roundsError;
           
@@ -132,7 +132,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
                 avatar: profile.avatar_url || undefined,
                 matchReason: match.match_reason_1 || 'You seem to be compatible based on your answers.',
                 matchScore: match.match_score,
-                conversationStarter: match.icebreaker_1 || 'What brings you to this activity?',
+                conversationStarter: match.icebreaker_1 || 'What brings you to this event?',
                 hasResponded: match.match_feedback && match.match_feedback.length > 0
               });
             }
@@ -145,10 +145,10 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
         console.error("ConnectionsList Error:", {
           error,
           user: user?.id,
-          activityId,
+          eventId,
           // Log the raw query for debugging
-          query: `match table with profile_id_1=${user?.id} ${activityId && activityId !== 'all' ? 
-            `and round_id in [rounds for activity ${activityId}]` : ''}`
+          query: `match table with profile_id_1=${user?.id} ${eventId && eventId !== 'all' ? 
+            `and round_id in [rounds for event ${eventId}]` : ''}`
         });
         
         // Add informative error for the user
@@ -167,7 +167,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
     };
     
     fetchMatches();
-  }, [user, activityId]);
+  }, [user, eventId]);
 
   if (loading) {
     return (
@@ -191,7 +191,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
     return (
       <Card>
         <CardContent className="py-10 text-center">
-          <p className="text-muted-foreground">No matches found for this activity yet.</p>
+          <p className="text-muted-foreground">No matches found for this event yet.</p>
         </CardContent>
       </Card>
     );
@@ -200,7 +200,7 @@ const MatchesList = ({ activityId }: MatchesListProps) => {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        These are the people you matched with during this activity.
+        These are the people you matched with during this event.
       </p>
       
       {matches.map((match) => (

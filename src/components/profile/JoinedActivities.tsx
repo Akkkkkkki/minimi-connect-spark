@@ -7,23 +7,23 @@ import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/sonner';
 
-interface Activity {
+interface Event {
   id: number;
   title: string;
   location: string;
   start_time: string;
   end_time: string | null;
-  activity_type: string;
+  event_type: string;
   tags: string[];
 }
 
 interface JoinedActivitiesProps {
-  onSelectActivity?: (id: string) => void;
+  onSelectEvent?: (id: string) => void;
 }
 
-const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
+const JoinedActivities = ({ onSelectEvent }: JoinedActivitiesProps) => {
   const { user } = useAuth();
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,22 +33,22 @@ const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
       try {
         setLoading(true);
         
-        // Query the activity_participant table to get activities the user has joined
+        // Query the event_participant table to get activities the user has joined
         const { data: participantData, error: participantError } = await supabase
-          .from('activity_participant')
-          .select('activity_id')
+          .from('event_participant')
+          .select('event_id')
           .eq('profile_id', user.id);
         
         if (participantError) throw participantError;
         
         if (participantData && participantData.length > 0) {
-          const activityIds = participantData.map(p => p.activity_id);
+          const eventIds = participantData.map(p => p.event_id);
           
           // Get the activities based on the IDs
           const { data: activitiesData, error: activitiesError } = await supabase
-            .from('activity')
+            .from('event')
             .select('*')
-            .in('id', activityIds)
+            .in('id', eventIds)
             .order('start_time', { ascending: false });
             
           if (activitiesError) throw activitiesError;
@@ -98,34 +98,34 @@ const JoinedActivities = ({ onSelectActivity }: JoinedActivitiesProps) => {
 
   return (
     <div className="space-y-4">
-      {activities.map((activity) => (
+      {activities.map((event) => (
         <Card 
-          key={activity.id.toString()} 
-          className={onSelectActivity ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
-          onClick={onSelectActivity ? () => onSelectActivity(activity.id.toString()) : undefined}
+          key={event.id.toString()} 
+          className={onSelectEvent ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
+          onClick={onSelectEvent ? () => onSelectEvent(event.id.toString()) : undefined}
         >
           <CardContent className="p-4">
             <div className="space-y-2">
               <div className="flex justify-between items-start">
-                <h3 className="font-medium">{activity.title}</h3>
-                <Badge variant="outline">{activity.activity_type}</Badge>
+                <h3 className="font-medium">{event.title}</h3>
+                <Badge variant="outline">{event.event_type}</Badge>
               </div>
               
               <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <MapPin size={14} />
-                  <span>{activity.location}</span>
+                  <span>{event.location}</span>
                 </div>
                 
                 <div className="flex items-center gap-1">
                   <Clock size={14} />
-                  <span>{new Date(activity.start_time).toLocaleDateString()}</span>
+                  <span>{new Date(event.start_time).toLocaleDateString()}</span>
                 </div>
               </div>
               
-              {activity.tags && activity.tags.length > 0 && (
+              {event.tags && event.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {activity.tags.slice(0, 5).map((tag, index) => (
+                  {event.tags.slice(0, 5).map((tag, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                 </div>

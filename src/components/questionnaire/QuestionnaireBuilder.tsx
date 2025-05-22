@@ -18,23 +18,23 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, MoveUp, MoveDown, Edit, Save } from "lucide-react";
-import { QuestionnaireQuestion, ActivityQuestionnaire } from "@/utils/supabaseTypes";
+import { Question, Questionnaire } from "@/types/index";
 
 const QuestionnaireBuilder = () => {
-  const { activityId } = useParams<{ activityId: string }>();
+  const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [questionnaire, setQuestionnaire] = useState<any | null>(null);
-  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
-  const [activity, setActivity] = useState<any | null>(null);
-  const [originalQuestions, setOriginalQuestions] = useState<QuestionnaireQuestion[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [event, setEvent] = useState<any | null>(null);
+  const [originalQuestions, setOriginalQuestions] = useState<Question[]>([]);
 
-  const [newQuestion, setNewQuestion] = useState<Partial<QuestionnaireQuestion>>({
-    question_text: "",
-    question_type: "text",
+  const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
+    text: "",
+    type: "text",
     required: true,
     options: [""]
   });
@@ -42,22 +42,22 @@ const QuestionnaireBuilder = () => {
 
   useEffect(() => {
     const fetchQuestionnaire = async () => {
-      if (!activityId) return;
+      if (!eventId) return;
       setLoading(true);
       try {
-        // Fetch activity info for title/description
-        const { data: activityData, error: activityError } = await supabase
-          .from('activity')
+        // Fetch event info for title/description
+        const { data: eventData, error: eventError } = await supabase
+          .from('event')
           .select("*")
-          .eq("id", activityId)
+          .eq("id", eventId)
           .single();
-        if (activityError) throw activityError;
-        setActivity(activityData);
-        // Fetch activity_questionnaire to get id
+        if (eventError) throw eventError;
+        setEvent(eventData);
+        // Fetch event_questionnaire to get id
         const { data: aqData, error: aqError } = await supabase
-          .from('activity_questionnaire')
+          .from('event_questionnaire')
           .select("*")
-          .eq("activity_id", activityId)
+          .eq("event_id", eventId)
           .maybeSingle();
         if (aqError) throw aqError;
         if (!aqData) {
@@ -67,14 +67,33 @@ const QuestionnaireBuilder = () => {
         } else {
           setQuestionnaire(aqData);
           // Fetch questions for this questionnaire
+          // @ts-expect-error
           const { data: questionsData, error: questionsError } = await supabase
             .from('questionnaire_question')
             .select("*")
-            .eq("questionnaire_id", aqData.id)
+            .eq("event_questionnaire_id", aqData.id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
-          setQuestions(questionsData || []);
-          setOriginalQuestions(questionsData || []);
+          setQuestions(
+            (questionsData || []).map((q: any) => ({
+              id: q.id,
+              text: q.question_text,
+              type: q.question_type,
+              options: q.options ? (typeof q.options === "string" ? JSON.parse(q.options) : q.options) : undefined,
+              required: q.required,
+              order: q.order,
+            }))
+          );
+          setOriginalQuestions(
+            (questionsData || []).map((q: any) => ({
+              id: q.id,
+              text: q.question_text,
+              type: q.question_type,
+              options: q.options ? (typeof q.options === "string" ? JSON.parse(q.options) : q.options) : undefined,
+              required: q.required,
+              order: q.order,
+            }))
+          );
         }
       } catch (error) {
         console.error("Error fetching questionnaire:", error);
@@ -84,12 +103,12 @@ const QuestionnaireBuilder = () => {
       }
     };
     fetchQuestionnaire();
-  }, [activityId]);
+  }, [eventId]);
 
   const handleQuestionTypeChange = (type: "multiple_choice" | "text") => {
     setNewQuestion({
       ...newQuestion,
-      question_type: type,
+      type,
       options: type === "multiple_choice" ? [""] : undefined
     });
   };
@@ -125,21 +144,20 @@ const QuestionnaireBuilder = () => {
   };
 
   const addQuestion = () => {
-    if (!newQuestion.question_text) {
+    if (!newQuestion.text) {
       toast.error("Question text is required");
       return;
     }
-    if (newQuestion.question_type === "multiple_choice" && (!newQuestion.options || newQuestion.options.filter(o => o.trim()).length < 2)) {
+    if (newQuestion.type === "multiple_choice" && (!newQuestion.options || newQuestion.options.filter(o => o.trim()).length < 2)) {
       toast.error("Multiple choice questions require at least two options");
       return;
     }
-    const newQuestionComplete: QuestionnaireQuestion = {
+    const newQuestionComplete: Question = {
       id: crypto.randomUUID(),
-      questionnaire_id: questionnaire?.id || '',
-      question_text: newQuestion.question_text!,
-      question_type: newQuestion.question_type || "text",
+      text: newQuestion.text!,
+      type: newQuestion.type || "text",
       required: newQuestion.required ?? true,
-      options: newQuestion.question_type === "multiple_choice" ? newQuestion.options?.filter(o => o.trim()) : undefined,
+      options: newQuestion.type === "multiple_choice" ? newQuestion.options?.filter(o => o.trim()) : undefined,
       order: questions.length
     };
     if (editingQuestionIndex !== null) {
@@ -151,8 +169,8 @@ const QuestionnaireBuilder = () => {
       setQuestions([...questions, newQuestionComplete]);
     }
     setNewQuestion({
-      question_text: "",
-      question_type: "text",
+      text: "",
+      type: "text",
       required: true,
       options: [""]
     });
@@ -193,25 +211,26 @@ const QuestionnaireBuilder = () => {
       toast.error("You must be logged in to save the questionnaire");
       return;
     }
-    if (!activityId) {
-      toast.error("Activity ID is missing");
+    if (!eventId) {
+      toast.error("Event ID is missing");
       return;
     }
     setSaving(true);
     try {
       // Upsert all questions
       const upsertQuestions = questions.map((q, idx) => {
-        const base = {
-          ...q,
+        const dbQuestion: any = {
+          id: q.id,
+          event_questionnaire_id: questionnaire.id,
+          question_text: q.text,
+          question_type: q.type,
+          required: q.required,
           order: idx,
-          questionnaire_id: questionnaire.id,
         };
-        if (q.question_type === 'multiple_choice' && q.options) {
-          return { ...base, options: JSON.stringify(q.options) };
+        if (q.type === 'multiple_choice' && q.options) {
+          dbQuestion.options = JSON.stringify(q.options);
         }
-        // Remove options field for non-multiple_choice
-        const { options, ...rest } = base;
-        return rest;
+        return dbQuestion;
       });
       const { error: upsertError } = await supabase
         .from('questionnaire_question')
@@ -228,7 +247,7 @@ const QuestionnaireBuilder = () => {
         if (deleteError) throw deleteError;
       }
       toast.success("Questionnaire has been saved");
-      navigate(`/activity-management`);
+      navigate(`/event-management`);
     } catch (error) {
       console.error("Error saving questionnaire:", error);
       toast.error("Failed to save questionnaire");
@@ -238,7 +257,7 @@ const QuestionnaireBuilder = () => {
   };
 
   const handleBack = () => {
-    navigate(`/activity-management`);
+    navigate(`/event-management`);
   };
 
   if (loading) {
@@ -271,7 +290,7 @@ const QuestionnaireBuilder = () => {
         </div>
         <CardDescription>
           Create questions to help match participants for{" "}
-          <span className="font-medium">{activity?.title}</span>
+          <span className="font-medium">{event?.title}</span>
         </CardDescription>
       </CardHeader>
 
@@ -299,15 +318,15 @@ const QuestionnaireBuilder = () => {
                               <Label htmlFor="questionText">Question Text</Label>
                               <Input
                                 id="questionText"
-                                value={newQuestion.question_text}
-                                onChange={(e) => setNewQuestion({...newQuestion, question_text: e.target.value})}
+                                value={newQuestion.text}
+                                onChange={(e) => setNewQuestion({...newQuestion, text: e.target.value})}
                                 placeholder="Enter your question here"
                               />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="questionType">Question Type</Label>
                               <Select
-                                value={newQuestion.question_type}
+                                value={newQuestion.type}
                                 onValueChange={(value) => handleQuestionTypeChange(value as "multiple_choice" | "text")}
                               >
                                 <SelectTrigger>
@@ -327,7 +346,7 @@ const QuestionnaireBuilder = () => {
                               />
                               <Label htmlFor="required">Required Question</Label>
                             </div>
-                            {newQuestion.question_type === "multiple_choice" && (
+                            {newQuestion.type === "multiple_choice" && (
                               <div className="space-y-3">
                                 <Label>Options</Label>
                                 {newQuestion.options?.map((option, optIdx) => (
@@ -366,8 +385,8 @@ const QuestionnaireBuilder = () => {
                               <Button type="button" variant="outline" onClick={() => {
                                 setEditingQuestionIndex(null);
                                 setNewQuestion({
-                                  question_text: "",
-                                  question_type: "text",
+                                  text: "",
+                                  type: "text",
                                   required: true,
                                   options: [""]
                                 });
@@ -409,9 +428,9 @@ const QuestionnaireBuilder = () => {
                       <CardContent className="pt-4 pl-10">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h4 className="font-medium">{question.question_text}</h4>
+                            <h4 className="font-medium">{question.text}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Type: {question.question_type === 'multiple_choice' ? 'Multiple Choice' : 'Text'} | 
+                              Type: {question.type === 'multiple_choice' ? 'Multiple Choice' : 'Text'} | 
                               {required ? ' Required' : ' Optional'}
                             </p>
                           </div>
@@ -435,7 +454,7 @@ const QuestionnaireBuilder = () => {
                             </Button>
                           </div>
                         </div>
-                        {question.question_type === 'multiple_choice' && options.length > 0 && (
+                        {question.type === 'multiple_choice' && options.length > 0 && (
                           <div className="mt-2 pl-4">
                             <p className="text-sm font-medium mb-1">Options:</p>
                             <ul className="list-disc pl-5 text-sm">
@@ -461,15 +480,15 @@ const QuestionnaireBuilder = () => {
                     <Label htmlFor="questionText">Question Text</Label>
                     <Input
                       id="questionText"
-                      value={newQuestion.question_text}
-                      onChange={(e) => setNewQuestion({...newQuestion, question_text: e.target.value})}
+                      value={newQuestion.text}
+                      onChange={(e) => setNewQuestion({...newQuestion, text: e.target.value})}
                       placeholder="Enter your question here"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="questionType">Question Type</Label>
                     <Select
-                      value={newQuestion.question_type}
+                      value={newQuestion.type}
                       onValueChange={(value) => handleQuestionTypeChange(value as "multiple_choice" | "text")}
                     >
                       <SelectTrigger>
@@ -489,7 +508,7 @@ const QuestionnaireBuilder = () => {
                     />
                     <Label htmlFor="required">Required Question</Label>
                   </div>
-                  {newQuestion.question_type === "multiple_choice" && (
+                  {newQuestion.type === "multiple_choice" && (
                     <div className="space-y-3">
                       <Label>Options</Label>
                       {newQuestion.options?.map((option, index) => (

@@ -7,22 +7,22 @@ const testimonials = [
     id: 1,
     quote: "MINIMI helped me find a hiking buddy who ended up becoming one of my closest friends. The questionnaire really matched our energy levels and outdoor interests perfectly!",
     name: "Alex Thompson",
-    role: "Activity Match",
-    activity: "Mountain Hiking"
+    role: "Event Match",
+    event: "Mountain Hiking"
   },
   {
     id: 2,
     quote: "I was skeptical about using an app for networking, but MINIMI connected me with a mentor in my industry who's been invaluable for my career growth.",
     name: "Sarah Chen",
     role: "Professional Connection",
-    activity: "Industry Meetup"
+    event: "Industry Meetup"
   },
   {
     id: 3,
     quote: "After several disappointing dating apps, MINIMI was refreshing. The matching algorithm actually considered what matters to me, and I've been dating my match for 6 months now!",
     name: "Marcus Johnson",
     role: "Romantic Match",
-    activity: "Coffee Connections"
+    event: "Coffee Connections"
   }
 ];
 
@@ -73,7 +73,7 @@ const Testimonials = () => {
                         <div className="flex items-center mt-1">
                           <span className="text-sm text-gray-500">{testimonial.role}</span>
                           <span className="mx-2 text-gray-300">•</span>
-                          <span className="text-sm text-accent">{testimonial.activity}</span>
+                          <span className="text-sm text-accent">{testimonial.event}</span>
                         </div>
                       </div>
                     </div>

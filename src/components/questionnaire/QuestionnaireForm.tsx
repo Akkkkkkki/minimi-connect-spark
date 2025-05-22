@@ -12,10 +12,10 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
-import { ActivityParticipant, QuestionnaireQuestion } from "@/utils/supabaseTypes";
+import { EventParticipant, Question, ParticipantStatus } from "@/types/index";
 
 interface QuestionnaireFormProps {
-  activityId: string;
+  eventId: string;
   isParticipant?: boolean;
 }
 
@@ -25,59 +25,67 @@ interface Answers {
   };
 }
 
-const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isParticipant = true }) => {
+const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ eventId, isParticipant = true }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [questionnaire, setQuestionnaire] = useState<QuestionnaireQuestion | null>(null);
-  const [activity, setActivity] = useState<any | null>(null);
+  const [questionnaire, setQuestionnaire] = useState<Question | null>(null);
+  const [event, setEvent] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
-  const [existingParticipation, setExistingParticipation] = useState<ActivityParticipant | null>(null);
-  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
+  const [existingParticipation, setExistingParticipation] = useState<EventParticipant | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     const fetchQuestionnaire = async () => {
       setLoading(true);
       try {
-        // Fetch activity information
-        const { data: activityData, error: activityError } = await supabase
-          .from('activity')
+        // Fetch event information
+        const { data: eventData, error: eventError } = await supabase
+          .from('event')
           .select("*")
-          .eq("id", activityId)
+          .eq("id", eventId)
           .single();
 
-        if (activityError) throw activityError;
-        setActivity(activityData);
+        if (eventError) throw eventError;
+        setEvent(eventData);
 
-        // Fetch questionnaire for this activity
+        // Fetch questionnaire for this event
         const { data: aqData, error: aqError } = await supabase
-          .from('activity_questionnaire')
+          .from('event_questionnaire')
           .select("*")
-          .eq("activity_id", activityId)
+          .eq("event_id", eventId)
           .maybeSingle();
         if (aqError) throw aqError;
         if (!aqData) {
           setQuestions([]);
           setQuestionnaire(null);
         } else {
-          setQuestionnaire(aqData);
           // Fetch questions for this questionnaire
           const { data: questionsData, error: questionsError } = await supabase
             .from('questionnaire_question')
             .select("*")
-            .eq("questionnaire_id", aqData.id)
+            .eq("event_questionnaire_id", aqData.id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
-          setQuestions(questionsData || []);
+          setQuestions(
+            (questionsData || []).map((q: any) => ({
+              id: q.id,
+              text: q.question_text,
+              type: q.question_type === "single_choice" ? "multiple_choice" : q.question_type,
+              options: q.options,
+              required: q.required,
+              order: q.order,
+            }))
+          );
         }
 
         if (isParticipant && user) {
           // Check if user has already filled in the questionnaire
           const { data: participationData, error: participationError } = await supabase
-            .from('activity_participant')
+            .from('event_participant')
             .select("*")
-            .eq("activity_id", activityId)
+            .eq("event_id", eventId)
             .eq("profile_id", user.id)
             .single();
 
@@ -86,7 +94,14 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           }
 
           if (participationData) {
-            setExistingParticipation(participationData);
+            setExistingParticipation({
+              id: participationData.id.toString(),
+              eventId: participationData.event_id,
+              profileId: participationData.profile_id,
+              status: participationData.status as ParticipantStatus,
+              createdAt: participationData.created_at,
+              updatedAt: participationData.updated_at,
+            });
             // Fetch existing questionnaire responses
             const { data: responsesData, error: responsesError } = await supabase
               .from('questionnaire_response')
@@ -96,8 +111,8 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             if (responsesError) throw responsesError;
             // Convert responses to answers format
             const answers: Answers = {};
-            responsesData?.forEach(response => {
-              answers[response.question_id] = { answer: response.answers };
+            responsesData?.forEach((response: any) => {
+              answers[response.question_id] = { answer: response.answers as string | string[] };
             });
             setAnswers(answers);
           } else {
@@ -110,10 +125,10 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
       }
     };
 
-    if (activityId) {
+    if (eventId) {
       fetchQuestionnaire();
     }
-  }, [activityId, user, isParticipant]);
+  }, [eventId, user, isParticipant]);
 
   // Debug: Log answers and questions after they are loaded
   useEffect(() => {
@@ -173,7 +188,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
       const answer = answers[question.id]?.answer;
       
       if (!answer || (Array.isArray(answer) && answer.length === 0)) {
-        toast.error(`Please answer the required question: ${question.question_text}`);
+        toast.error(`Please answer the required question: ${question.text}`);
         isValid = false;
         break;
       }
@@ -200,12 +215,12 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         if (existingParticipation) {
           // Update existing participation - they've completed the questionnaire
           const { error: updateError } = await supabase
-            .from('activity_participant')
+            .from('event_participant')
             .update({
               status: "completed",
               updated_at: new Date().toISOString()
             })
-            .eq("id", existingParticipation.id);
+            .eq("id", Number(existingParticipation.id));
 
           if (updateError) {
             throw new Error(`Failed to update participation: ${updateError.message}`);
@@ -213,9 +228,9 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         } else {
           // Create new participation - they've just joined and completed the questionnaire
           const { data: newParticipation, error: participationError } = await supabase
-            .from('activity_participant')
+            .from('event_participant')
             .insert({
-              activity_id: activityId,
+              event_id: eventId,
               profile_id: user.id,
               status: "completed"
             })
@@ -229,7 +244,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           if (!newParticipation) {
             throw new Error("Failed to create participation: No data returned");
           }
-          participantId = newParticipation.id;
+          participantId = newParticipation.id.toString();
         }
 
         // Upsert (update or insert) questionnaire responses for each question
@@ -238,7 +253,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           const { data: existingResponse, error: fetchError } = await supabase
             .from('questionnaire_response')
             .select("id")
-            .eq("participant_id", participantId)
+            .eq("participant_id", Number(participantId))
             .eq("question_id", question.id)
             .maybeSingle();
           if (fetchError) {
@@ -261,7 +276,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             const { error: insertResponseError } = await supabase
               .from('questionnaire_response')
               .insert({
-                participant_id: participantId,
+                participant_id: Number(participantId),
                 question_id: question.id,
                 answers: answers[question.id]?.answer || null,
                 created_at: new Date().toISOString(),
@@ -273,14 +288,14 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
           }
         }
         toast.success("Your answers have been submitted");
-        navigate(`/my-activities`);
+        navigate(`/my-events`);
       } else {
         // Organizer is creating or updating questions
         // Remove all logic that writes to the old questionnaire table
-        // Only update questionnaire_content and activity_questionnaire as needed
+        // Only update questionnaire_content and event_questionnaire as needed
         // ... (implementation depends on your organizer logic, but do not use questionnaire table)
         toast.success("Questions have been saved");
-        navigate(`/activity-management`);
+        navigate(`/event-management`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit questionnaire");
@@ -291,9 +306,9 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
 
   const handleBack = () => {
     if (isParticipant) {
-      navigate(`/activities/${activityId}`);
+      navigate(`/events/${eventId}`);
     } else {
-      navigate(`/activity-management`);
+      navigate(`/event-management`);
     }
   };
 
@@ -325,11 +340,11 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
         <CardHeader>
           <CardTitle>No Questionnaire Available</CardTitle>
           <CardDescription>
-            The organizer hasn't created a questionnaire for this activity yet.
+            The organizer hasn't created a questionnaire for this event yet.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleBack}>Back to Activity</Button>
+          <Button onClick={handleBack}>Back to Event</Button>
         </CardContent>
       </Card>
     );
@@ -343,7 +358,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <CardTitle>
-            {activity?.title} - {isParticipant ? "Questionnaire" : "Create Questionnaire"}
+            {event?.title} - {isParticipant ? "Questionnaire" : "Create Questionnaire"}
           </CardTitle>
         </div>
         <CardDescription>
@@ -360,7 +375,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               <Label htmlFor="title">Questionnaire Title</Label>
               <Input
                 id="title"
-                value={activity?.title || ""}
+                value={event?.title || ""}
                 disabled
                 className="w-full"
               />
@@ -372,7 +387,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={activity?.description || ""}
+                value={event?.description || ""}
                 disabled
                 className="w-full"
               />
@@ -388,12 +403,12 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
                   <div key={question.id} className="space-y-3 border-b pb-6">
                     <div className="flex items-center">
                       <Label className="text-base font-medium">
-                        {question.question_text}
+                        {question.text}
                         {required && <span className="text-red-500 ml-1">*</span>}
                       </Label>
                     </div>
                     
-                    {question.question_type === "text" && (
+                    {question.type === "text" && (
                       <Textarea
                         placeholder="Your answer"
                         value={(answers[question.id]?.answer as string) || ""}
@@ -402,22 +417,7 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ activityId, isPar
                       />
                     )}
 
-                    {question.question_type === "single_choice" && options && (
-                      <RadioGroup
-                        value={(answers[question.id]?.answer as string) || ""}
-                        onValueChange={(value) => handleSingleChoiceAnswer(question.id, value)}
-                        className="flex flex-col space-y-2"
-                      >
-                        {options.map((option, idx) => (
-                          <div key={idx} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`${question.id}-${idx}`} />
-                            <Label htmlFor={`${question.id}-${idx}`}>{option}</Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    )}
-
-                    {question.question_type === "multiple_choice" && options && (
+                    {question.type === "multiple_choice" && options && (
                       <div className="space-y-2">
                         {options.map((option, idx) => (
                           <div key={idx} className="flex items-center space-x-2">

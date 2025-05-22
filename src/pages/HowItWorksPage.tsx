@@ -15,7 +15,7 @@ const HowItWorksPage = () => {
     <PageLayout>
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">How MINIMI Works</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">How MINIMI Works: Events</h1>
           <p className="text-lg text-gray-600">
             Our platform uses intelligent matching to help you form meaningful connections across different contexts.
             Here's a step-by-step guide to get started.
@@ -54,9 +54,9 @@ const HowItWorksPage = () => {
               </div>
             </div>
             <div className="md:w-2/3">
-              <h2 className="text-2xl font-semibold mb-3 text-primary">2. Browse & Join All Activities</h2>
+              <h2 className="text-2xl font-semibold mb-3 text-primary">2. Browse & Join All Events</h2>
               <p className="text-gray-600">
-                Explore our catalog of activities and events. Filter by type, location, date, or interests to find activities 
+                Explore our catalog of events and activities. Filter by type, location, date, or interests to find events 
                 that appeal to you. When you find something interesting, join to be included in the matching process.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -79,7 +79,7 @@ const HowItWorksPage = () => {
             <div className="md:w-2/3">
               <h2 className="text-2xl font-semibold mb-3 text-primary">3. Answer Questionnaires</h2>
               <p className="text-gray-600">
-                Each activity has a custom questionnaire designed by the creator. Answer all questions honestly to help our 
+                Each event has a custom questionnaire designed by the creator. Answer all questions honestly to help our 
                 algorithm find the most compatible matches for you. These could be multiple choice questions or short answers.
               </p>
               <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -103,7 +103,7 @@ const HowItWorksPage = () => {
             <div className="md:w-2/3">
               <h2 className="text-2xl font-semibold mb-3 text-primary">4. Receive Your Matches</h2>
               <p className="text-gray-600">
-                At the designated matching time set by the activity creator, our algorithm will process all participants' 
+                At the designated matching time set by the event creator, our algorithm will process all participants' 
                 information and provide you with matches. You'll receive match details along with compatibility reasoning 
                 and icebreaker suggestions.
               </p>
@@ -131,7 +131,7 @@ const HowItWorksPage = () => {
               <h2 className="text-2xl font-semibold mb-3 text-primary">5. Provide Feedback</h2>
               <p className="text-gray-600">
                 After connecting with your matches, provide feedback on the quality of the match. This helps us improve 
-                our algorithm for future matches and helps activity creators understand the success of their events.
+                our algorithm for future matches and helps event creators understand the success of their events.
               </p>
               <div className="mt-4 flex gap-4">
                 <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ const HowItWorksPage = () => {
             </Link>
             <Link to="/activities">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Browse All Activities
+                Browse All Events
               </Button>
             </Link>
           </div>

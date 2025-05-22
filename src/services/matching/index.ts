@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai';
-import type { MatchingOptions, MatchingResult, UserProfile, MatchResult, ActivityQuestionnaire, Candidate } from './types';
+import type { MatchingOptions, MatchingResult, UserProfile, MatchResult, EventQuestionnaire, Candidate } from './types';
 import { MATCHING_PROMPTS } from './constants';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,11 +26,11 @@ export class MatchingService {
   private embeddingModel: string;
   private cache: Map<string, number[]> = new Map();
 
-  private async loadActivityQuestionnaire(activityId: string): Promise<ActivityQuestionnaire> {
+  private async loadEventQuestionnaire(eventId: string): Promise<EventQuestionnaire> {
     const { data: questionnaireData, error: questionnaireError } = await supabase
-      .from('activity_questionnaire')
+      .from('event_questionnaire')
       .select('*')
-      .eq('activity_id', activityId)
+      .eq('event_id', eventId)
       .single();
 
     if (questionnaireError) {
@@ -58,13 +58,13 @@ export class MatchingService {
 
     return {
       id: questionnaireData.id,
-      activityId: questionnaireData.activity_id,
+      eventId: questionnaireData.event_id,
       questions: questionsData,
       attributes: attributesData
     };
   }
 
-  private async applyHardFilters(users: UserProfile[], questionnaire: ActivityQuestionnaire): Promise<UserProfile[]> {
+  private async applyHardFilters(users: UserProfile[], questionnaire: EventQuestionnaire): Promise<UserProfile[]> {
     const hardFilterAttributes = questionnaire.attributes.filter(attr => attr.type === 'hard_filter');
     
     return users.filter(user => {
@@ -80,7 +80,7 @@ export class MatchingService {
     });
   }
 
-  private async calculateSoftPreferenceScore(user1: UserProfile, user2: UserProfile, questionnaire: ActivityQuestionnaire): Promise<number> {
+  private async calculateSoftPreferenceScore(user1: UserProfile, user2: UserProfile, questionnaire: EventQuestionnaire): Promise<number> {
     const softPreferenceAttributes = questionnaire.attributes.filter(attr => attr.type === 'soft_preference');
     let totalScore = 0;
     let totalWeight = 0;
@@ -122,7 +122,7 @@ export class MatchingService {
 
   async matchUsers(options: MatchingOptions): Promise<MatchingResult> {
     try {
-      const { userId, activityId, targetUsers, questionnaire } = options;
+      const { userId, eventId, targetUsers, questionnaire } = options;
       const mainUser = targetUsers.find(u => u.userId === userId);
 
       if (!mainUser) {

@@ -79,7 +79,7 @@ MINIMI serves two core user roles:
    - Use cases include:
      - Dating events
      - Speed networking
-     - Local activity meetups or clubs
+     - Local event meetups or clubs
      - Internal corporate events
 
 Both groups share one platform experience. Users may participate in events or become organizers by publishing one.
@@ -91,8 +91,8 @@ Both groups share one platform experience. Users may participate in events or be
 - Multi-language support
 - Profile privacy controls
 
-### Activity Explorer
-- Public browsing of activities by location, tags, or type
+### Event Explorer
+- Public browsing of events by location, tags, or type
 - Events can be romantic, professional, or casual
 
 ### Event Creation (Organizer Mode)
@@ -157,9 +157,9 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 - **users** – Authenticated identities
 - **profiles** – Personal info, preferences, location
-- **activities** – Events with time, tags, and matching rounds
-- **activity_questions** – Custom forms per event
-- **activity_participants** – Tracks responses and join status
+- **events** – Events with time, tags, and matching rounds
+- **event_questions** – Custom forms per event
+- **event_participants** – Tracks responses and join status
 - **matches** – Stores matched pairs, score, reasoning, icebreaker
 - **match_feedback** – Post-match reactions and reasons
 - **event_insights** (optional) – Aggregated data for organizers
@@ -168,7 +168,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 - Clean, minimalist layout with a slightly playful vibe
 - Responsive, mobile-first design
-- Grid-based content presentation (especially for activities)
+- Grid-based content presentation (especially for events)
 - Accessible typography and contrast
 - Friendly tone with subtle animations
 
@@ -184,36 +184,59 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 ## Development Phases or Milestones
 
 ### Phase 1 – MVP (Foundational Matching Platform)
-- User profiles, activity creation, join flow
+- User profiles, event creation, join flow
 - Matching via basic filters + OpenAI scoring
 - Feedback system
 - Core admin tools
 
-### Phase 2 – AI Enhancements
-- Memory system for profiles and past chats
-- Adaptive scoring using feedback data
-- Deeper compatibility insights
+### Phase 2 – Event Ticketing System (Phased Approach)
 
-### Phase 3 – Community and Engagement Features
-- Group matching options
-- Video introductions or in-app video chat
-- Gamification (e.g., badges for engaged users)
-- Integration with calendars or social platforms
-
-### 🚧 TODO: Upcoming Prototyping Features
-
-#### Event Ticketing System (Prototype)
-- Allow organizers to enable ticketing for their events (toggle when creating/editing an event).
-- Users can reserve a ticket for an event (no payment required for prototype).
-- Track ticket reservations in the database (e.g., new `tickets` or `event_tickets` table).
-- Show ticket status (reserved/full) on activity and profile pages.
+#### **Phase 2.1 – Free Ticket System**
+- Design and implement ticketing tables in Supabase (see schema in this repo).
+- Allow organizers to enable ticketing for their events and set ticket limits.
+- Users can reserve a free ticket for an event (no payment required).
+- Track ticket reservations in the database (`event_ticket`, `ticket_type`, and `event_ticket_setting` tables).
+- Show ticket status (reserved/full) on event and profile pages.
 - Export list of ticket holders for organizers.
+- Enforce per-user and per-type ticket limits in the app logic.
+- Set up RLS (Row Level Security) policies so users can only see/manage their own tickets.
 
-#### LinkedIn Sign-In (Prototype)
+#### **Phase 2.2 – Stripe Integration for Paid Tickets**
+- Integrate Stripe with Supabase for payment processing ([Supabase Stripe integration guide](https://medium.com/@ojasskapre/implementing-stripe-subscriptions-with-supabase-next-js-and-fastapi-666e1aada1b5#:~:text=,create%20a%20Stripe%20Checkout%20session)).
+- Add price fields to ticket types and support paid ticket types.
+- When a user selects a paid ticket, create a Stripe Checkout session and redirect the user to complete payment.
+- On successful payment, update the ticket status in Supabase and issue the ticket.
+- Handle payment webhooks to confirm ticket issuance and manage refunds/cancellations.
+- Display payment status and receipts to users.
+
+#### **Phase 2.3 – Ticket Discounting System**
+- Add discount code support to the ticketing system (see [Stripe Discounts documentation](https://docs.stripe.com/payments/checkout/discounts?payment-ui=embedded-components#:~:text=match%20at%20L308%20On%20your,parameter%20in%20a%20Checkout%20Session)).
+- Allow organizers to create and manage discount codes for their events.
+- Users can enter a discount code at checkout; validate and apply the code to reduce the ticket price.
+- Enforce discount code usage limits, expiration, and eligibility in both Supabase and Stripe.
+- Track which tickets were purchased with which discount codes for reporting.
+- Show applied discounts and final prices in the UI and receipts.
+
+
+
+### Phase 3 – Data & AI Enhancements
+
+#### **Phase 3.1 – LinkedIn Sign-In and Profile Enrichment**
 - Add LinkedIn OAuth as a sign-in option (alongside email/phone).
 - On sign-in, fetch and store user's LinkedIn profile data (name, headline, photo, etc.) in the database.
 - Use LinkedIn data to enrich user profiles and improve matching.
 - (Optional) Show LinkedIn badge or info on user profile cards.
+
+#### **Phase 3.2 – Match Enhancements**
+- Memory system for profiles and past chats
+- Adaptive scoring using feedback data
+- Deeper compatibility insights
+
+### Phase 4 – Community and Engagement Features
+- Group matching options
+- Video introductions or in-app video chat
+- Gamification (e.g., badges for engaged users)
+- Integration with calendars or social platforms
 
 ## Potential Challenges and Solutions
 
@@ -265,7 +288,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Responsive grid for desktop users with max width for readability
 
 ### 🧭 Navigation
-- Simple and predictable: Home, Activities, My Events, Matches, Profile
+- Simple and predictable: Home, Events, My Events, Matches, Profile
 - Onboarding should progressively reveal features (e.g., match engine only after joining an event)
 - Persistent nav bar or bottom tab bar for mobile
 
@@ -296,7 +319,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Use Framer Motion or Tailwind transitions for:
   - Match card reveals
   - Button states
-  - Activity filtering
+  - Event filtering
 - Keep animations under 300ms — smooth, never distracting
 
 
@@ -305,7 +328,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Forms should feel light and scannable
   - Group related fields with spacing
   - Use smart defaults (e.g., country from browser location)
-- Avoid modals for critical flows (e.g., matching, joining activities)
+- Avoid modals for critical flows (e.g., matching, joining events)
 - Use skeleton loaders while fetching data
 
 
@@ -331,7 +354,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 ## User Roles
 
 ### 1. Regular User (Attendee)
-- Can browse activities
+- Can browse events
 - Can sign up, complete profile, and join events
 - Receives matches based on questionnaire answers
 - Can give feedback on matches
@@ -356,17 +379,17 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 ### 🏠 Homepage
 - Hero section explaining flexible matching purpose
-- Call-to-action: "Browse Activities"
+- Call-to-action: "Browse Events"
 - Testimonials or stories from successful matches
 - "Sign up to match" prompt with benefits
 
-### 🔍 Activity Explorer
+### 🔍 Event Explorer
 - Public page, viewable before signup
 - Filters: event type, tags, date, location
-- Activity cards show summary info
-- Click to view full activity detail page
+- Event cards show summary info
+- Click to view full event detail page
 
-### 📝 Activity Detail Page
+### 📝 Event Detail Page
 - Description, time, location, tags
 - Shows organizer name (if public)
 - Call-to-action: "Join and Get Matched"
@@ -384,7 +407,7 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 4. Privacy settings
 
 ### 💬 Match Flow
-- Once user joins an activity and submits answers:
+- Once user joins an event and submits answers:
   - Matching occurs at the time defined by organizer
   - Match results are delivered:
     - Match card with profile preview
@@ -422,10 +445,18 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 ## Flow Summary
 
-1. **Guest visits homepage → explores activities**
+1. **Guest visits homepage → explores events**
 2. **Clicks into an event → prompted to sign up**
 3. **Creates profile → joins event by answering questions**
 4. **Waits for match round → receives matches**
 5. **Reviews match, provides feedback**
 6. **May choose to create own event → becomes organizer**
 7. **Admin ensures platform safety and content quality**
+
+## Canonical Supabase Client & Types Usage
+
+> **Important:**
+> - The only place to initialize and import the Supabase client is `@/integrations/supabase/client`.
+> - The only place to import Supabase types (including `Database`) is `@/integrations/supabase/types`.
+> - Do **not** use or create duplicate clients or type definitions elsewhere in the codebase.
+> - This ensures type safety, maintainability, and consistency with the latest remote schema.
