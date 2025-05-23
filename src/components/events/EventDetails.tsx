@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { getTicketTypeAvailability, getUserTicketStatus, reserveOrWaitlistTicket, getEventTicketSetting } from '@/services/ticketing';
 
 interface EventDetailsProps {
   eventId: string;
@@ -24,6 +25,9 @@ const EventDetails = ({ eventId }: EventDetailsProps) => {
   const [participantId, setParticipantId] = useState<number | null>(null);
   const [hasCompletedQuestionnaire, setHasCompletedQuestionnaire] = useState<boolean>(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
+  const [ticketTypeStatus, setTicketTypeStatus] = useState<any[]>([]);
+  const [userTicketStatus, setUserTicketStatus] = useState<any>(null);
+  const [ticketSetting, setTicketSetting] = useState<any>(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -83,6 +87,20 @@ const EventDetails = ({ eventId }: EventDetailsProps) => {
           } else {
             setHasCompletedQuestionnaire(false);
           }
+
+          // Fetch ticket type status
+          const { data: typeStatus } = await getTicketTypeAvailability(eventId);
+          setTicketTypeStatus(typeStatus || []);
+          // Fetch ticket setting
+          const { data: setting } = await getEventTicketSetting(eventId);
+          setTicketSetting(setting);
+          // Fetch user ticket status
+          if (user) {
+            const { status: userStatus, ticket } = await getUserTicketStatus(eventId, user.id);
+            setUserTicketStatus({ status: userStatus, ticket });
+          } else {
+            setUserTicketStatus(null);
+          }
         }
       } catch (error) {
         toast.error("Failed to load event details");
@@ -103,22 +121,42 @@ const EventDetails = ({ eventId }: EventDetailsProps) => {
       return;
     }
     if (isFull || isParticipant) return;
-    if (event?.hasQuestionnaire) {
-      navigate(`/events/${eventId}/questionnaire`);
+    if (!ticketTypeStatus.length) return;
+    // Pick first available ticket type
+    const availableType = ticketTypeStatus.find(t => !t.isFull);
+    if (!availableType && ticketSetting?.allow_waitlist) {
+      // All full, but waitlist enabled
+      const typeToWaitlist = ticketTypeStatus[0];
+      const { error } = await reserveOrWaitlistTicket({
+        eventId,
+        ticketTypeId: typeToWaitlist.id,
+        profileId: user.id,
+        allowWaitlist: true,
+      });
+      if (error) {
+        toast.error(error.message || 'Could not join waitlist.');
+        return;
+      }
+      toast.success('You have joined the waitlist!');
+      setUserTicketStatus({ status: 'waitlisted' });
       return;
     }
-    // Directly join the event if no questionnaire
-    try {
-      const { error } = await supabase
-        .from('event_participant')
-        .insert({ event_id: eventId, profile_id: user.id });
-      if (error) throw error;
-      toast.success('You have joined the event!');
-      setIsParticipant(true);
-      setParticipantCount((prev) => prev + 1);
-    } catch (err) {
-      toast.error('Failed to join event.');
+    if (availableType) {
+      const { error } = await reserveOrWaitlistTicket({
+        eventId,
+        ticketTypeId: availableType.id,
+        profileId: user.id,
+        allowWaitlist: !!ticketSetting?.allow_waitlist,
+      });
+      if (error) {
+        toast.error(error.message || 'Could not reserve ticket.');
+        return;
+      }
+      toast.success('Ticket reserved!');
+      setUserTicketStatus({ status: 'reserved' });
+      return;
     }
+    toast.error('No tickets available.');
   };
 
   const handleCompleteQuestionnaire = () => {
@@ -269,6 +307,24 @@ const EventDetails = ({ eventId }: EventDetailsProps) => {
           <Users className="h-4 w-4 mr-2" />
           {participantCount}/30 participants
         </div>
+        {/* Ticket type status badges */}
+        {ticketTypeStatus.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {ticketTypeStatus.map(type => (
+              <Badge key={type.id} variant={type.isFull ? "destructive" : "default"}>
+                {type.name}: {type.isFull ? (ticketSetting?.allow_waitlist ? "Waitlist" : "Full") : `${type.available} left`}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {/* User's ticket status */}
+        {userTicketStatus?.status && userTicketStatus.status !== 'none' && (
+          <div className="mb-2">
+            <Badge variant={userTicketStatus.status === 'reserved' ? 'default' : 'secondary'}>
+              {userTicketStatus.status === 'reserved' ? 'Ticket Reserved' : 'Waitlisted'}
+            </Badge>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

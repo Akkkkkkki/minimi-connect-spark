@@ -23,6 +23,13 @@ export interface EventCardProps {
   status?: 'upcoming' | 'completed';
   event_type?: string;
   startDateISO?: string;
+  ticketTypeStatus?: Array<{
+    id: string;
+    name: string;
+    available: number;
+    isFull: boolean;
+    waitlisted?: boolean;
+  }>;
 }
 
 const EventCard = ({
@@ -39,6 +46,7 @@ const EventCard = ({
   imageUrl,
   isParticipant = false,
   status = 'upcoming',
+  ticketTypeStatus = [],
 }: EventCardProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
@@ -61,6 +69,9 @@ const EventCard = ({
     }
   };
 
+  // Determine if all ticket types are full
+  const allFull = ticketTypeStatus.length > 0 && ticketTypeStatus.every(t => t.isFull);
+
   let buttonText = "Join Event";
   let buttonDisabled = false;
   let buttonVariant = "accent";
@@ -68,7 +79,7 @@ const EventCard = ({
   if (!isAuthenticated) {
     buttonText = "Sign in to join event";
     buttonVariant = "outline";
-  } else if (isFull) {
+  } else if (allFull) {
     buttonText = "Event Full";
     buttonDisabled = true;
     buttonVariant = "outline";
@@ -118,6 +129,17 @@ const EventCard = ({
           )}
         </h3>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
+        
+        {/* Ticket type status badges */}
+        {ticketTypeStatus.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {ticketTypeStatus.map(type => (
+              <Badge key={type.id} variant={type.isFull ? "destructive" : "default"}>
+                {type.name}: {type.isFull ? (type.waitlisted ? "Waitlist" : "Full") : `${type.available} left`}
+              </Badge>
+            ))}
+          </div>
+        )}
         
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-sm text-gray-500">

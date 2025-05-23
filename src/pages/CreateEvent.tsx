@@ -361,95 +361,105 @@ const CreateEvent = () => {
                   )}
                 />
                 
-                {/* Ticketing Section - moved inside the form and using plain UI components */}
+                {/* Ticketing Section - now using app UI components */}
                 <div className="mt-8 border-t pt-6">
-                  <div className="mb-4 flex items-center gap-4">
-                    <Switch checked={ticketingEnabled} onCheckedChange={setTicketingEnabled} id="enable-ticketing" />
-                    <label htmlFor="enable-ticketing" className="font-medium cursor-pointer select-none">Enable Ticketing for this Event</label>
-                  </div>
+                  <FormItem className="mb-4 flex items-center gap-4">
+                    <FormLabel className="mb-0 flex items-center gap-2 cursor-pointer select-none">
+                      <Switch checked={ticketingEnabled} onCheckedChange={setTicketingEnabled} id="enable-ticketing" />
+                      Enable Ticketing for this Event
+                    </FormLabel>
+                  </FormItem>
                   {ticketingEnabled && (
                     <div className="space-y-4">
                       <div className="flex gap-4 flex-wrap">
-                        <div className="flex flex-col w-48">
-                          <label htmlFor="max-tickets-per-user" className="mb-1 font-medium">Max Tickets Per User</label>
-                          <input
-                            id="max-tickets-per-user"
-                            type="number"
-                            min={1}
-                            value={maxTicketsPerUser}
-                            onChange={e => setMaxTicketsPerUser(Number(e.target.value))}
-                            className="border rounded px-2 py-1"
-                          />
-                          <span className="text-xs text-muted-foreground mt-1">How many tickets each user can reserve (default: 1)</span>
-                        </div>
-                        <div className="flex flex-col w-48">
-                          <label htmlFor="allow-waitlist" className="mb-1 font-medium">Allow Waitlist</label>
-                          <div className="flex items-center gap-2">
-                            <Switch checked={allowWaitlist} onCheckedChange={setAllowWaitlist} id="allow-waitlist" />
-                            <span className="text-xs text-muted-foreground">Allow users to join a waitlist if tickets are full</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="font-medium">Ticket Types</label>
-                        {ticketTypes.map((t, idx) => (
-                          <div key={idx} className="flex gap-2 items-center mb-2 flex-wrap">
-                            <input
-                              placeholder="Ticket Name"
-                              value={t.name}
-                              onChange={e => {
-                                const arr = [...ticketTypes];
-                                arr[idx].name = e.target.value;
-                                setTicketTypes(arr);
-                              }}
-                              className="w-1/3 border rounded px-2 py-1"
-                            />
-                            <input
+                        <FormItem className="flex-1 min-w-[200px]">
+                          <FormLabel htmlFor="max-tickets-per-user">Max Tickets Per User</FormLabel>
+                          <FormControl>
+                            <Input
+                              id="max-tickets-per-user"
                               type="number"
                               min={1}
-                              placeholder="Quantity"
-                              value={t.quantity}
-                              onChange={e => {
-                                const arr = [...ticketTypes];
-                                arr[idx].quantity = Number(e.target.value);
-                                setTicketTypes(arr);
-                              }}
-                              className="w-1/4 border rounded px-2 py-1"
+                              value={maxTicketsPerUser}
+                              onChange={e => setMaxTicketsPerUser(Number(e.target.value))}
                             />
-                            <input
-                              type="number"
-                              min={0}
-                              placeholder="Price"
-                              value={t.price}
-                              onChange={e => {
-                                const arr = [...ticketTypes];
-                                arr[idx].price = Number(e.target.value);
-                                setTicketTypes(arr);
-                              }}
-                              className="w-1/4 border rounded px-2 py-1"
-                              disabled
-                            />
-                            {ticketTypes.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => setTicketTypes(ticketTypes.filter((_, i) => i !== idx))}
-                              >
-                                Remove
-                              </Button>
-                            )}
+                          </FormControl>
+                          <FormDescription>How many tickets each user can reserve (default: 1)</FormDescription>
+                        </FormItem>
+                        <FormItem className="flex-1 min-w-[200px]">
+                          <FormLabel htmlFor="allow-waitlist">Allow Waitlist</FormLabel>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Switch checked={allowWaitlist} onCheckedChange={setAllowWaitlist} id="allow-waitlist" />
+                            <FormDescription className="ml-2">Allow users to join a waitlist if tickets are full</FormDescription>
                           </div>
-                        ))}
+                        </FormItem>
+                      </div>
+                      <FormItem>
+                        <FormLabel>Ticket Types</FormLabel>
+                        <div className="space-y-2">
+                          {ticketTypes.map((t, idx) => (
+                            <div key={idx} className="flex gap-2 items-end flex-wrap">
+                              <FormItem className="flex-1 min-w-[120px]">
+                                <FormControl>
+                                  <Input
+                                    placeholder="Ticket Name"
+                                    value={t.name}
+                                    onChange={e => {
+                                      const arr = [...ticketTypes];
+                                      arr[idx].name = e.target.value;
+                                      setTicketTypes(arr);
+                                    }}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                              <FormItem className="w-28">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    placeholder="Quantity"
+                                    value={t.quantity}
+                                    onChange={e => {
+                                      const arr = [...ticketTypes];
+                                      arr[idx].quantity = Number(e.target.value);
+                                      setTicketTypes(arr);
+                                    }}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                              <FormItem className="w-28">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    placeholder="Price"
+                                    value={t.price}
+                                    disabled
+                                  />
+                                </FormControl>
+                              </FormItem>
+                              {ticketTypes.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => setTicketTypes(ticketTypes.filter((_, i) => i !== idx))}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
+                          className="mt-2"
                           onClick={() => setTicketTypes([...ticketTypes, { name: '', quantity: 1, price: 0 }])}
                         >
                           Add Ticket Type
                         </Button>
-                      </div>
+                      </FormItem>
                     </div>
                   )}
                 </div>

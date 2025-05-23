@@ -202,6 +202,14 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Set up RLS (Row Level Security) policies so users can only see/manage their own tickets.
 
 **Supabase Schema for Ticketing:**
+
+> **Canonical Relationship:**
+> - Every participant must have a row in `event_participant`. This is the source of truth for who is attending an event.
+> - The `event_ticket` table is used to track ticket details (type, price, status, etc.) for each participant, but is **not** the source of truth for participation.
+> - When a user joins an event, always create a row in `event_participant`. If ticketing is enabled, also create a row in `event_ticket` (linked to the participant).
+> - All participant lists, counts, and attendance logic should use `event_participant`.
+> - Use `event_ticket` to display or export ticket-specific information (type, price, status, etc.) for each participant.
+
 - `event_ticket_setting`: Per-event ticketing settings (enabled, max per user, waitlist, etc.)
 - `ticket_type`: Types of tickets for an event (name, price, quantity, sales window)
 - `event_ticket`: Individual ticket reservations (status, user, type, price paid, discount code, etc.)

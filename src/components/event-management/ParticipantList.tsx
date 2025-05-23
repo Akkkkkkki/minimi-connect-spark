@@ -1,12 +1,12 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { exportTicketHolders } from '@/services/ticketing';
 
 interface ParticipantListProps {
   eventId: string;
@@ -14,50 +14,23 @@ interface ParticipantListProps {
 
 const ParticipantList = ({ eventId }: ParticipantListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [participants, setParticipants] = useState<any[]>([]);
   
-  // Mock data - would come from Supabase in real implementation
-  const participants = [
-    {
-      id: "1",
-      name: "Alex Johnson",
-      email: "alex.j@example.com",
-      joinedAt: "2025-03-10T14:23:00",
-      status: "completed",
-      matchesReceived: 2
-    },
-    {
-      id: "2",
-      name: "Jamie Smith",
-      email: "jamie.smith@example.com",
-      joinedAt: "2025-03-12T10:05:00",
-      status: "pending",
-      matchesReceived: 0
-    },
-    {
-      id: "3",
-      name: "Riley Chen",
-      email: "riley.c@example.com",
-      joinedAt: "2025-03-11T16:42:00",
-      status: "completed",
-      matchesReceived: 1
-    },
-    {
-      id: "4",
-      name: "Jordan Smith",
-      email: "j.smith@example.com",
-      joinedAt: "2025-03-14T09:18:00",
-      status: "completed",
-      matchesReceived: 2
-    },
-    {
-      id: "5",
-      name: "Taylor Wong",
-      email: "taylor.w@example.com",
-      joinedAt: "2025-03-15T11:32:00",
-      status: "pending",
-      matchesReceived: 0
+  useEffect(() => {
+    async function fetchParticipants() {
+      const { data, error } = await exportTicketHolders(eventId);
+      if (error) return;
+      setParticipants(data.map((t: any) => ({
+        id: t.id,
+        name: `${t.profile?.first_name || ''} ${t.profile?.last_name || ''}`.trim(),
+        email: t.profile?.email || '',
+        joinedAt: t.reserved_at,
+        status: t.status,
+        ticketType: t.ticket_type?.name || '',
+      })));
     }
-  ];
+    fetchParticipants();
+  }, [eventId]);
 
   const filteredParticipants = participants.filter(participant => 
     participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,9 +41,19 @@ const ParticipantList = ({ eventId }: ParticipantListProps) => {
     toast.success("Reminder sent!");
   };
 
-  const handleExport = () => {
-    toast.info("Export functionality not implemented in demo");
-  };
+  const handleExport = useCallback(() => {
+    if (participants.length === 0) return;
+    const header = ['Name', 'Email', 'Ticket Type', 'Status', 'Reserved At'];
+    const rows = participants.map(p => [p.name, p.email, p.ticketType, p.status, p.joinedAt]);
+    const csv = [header, ...rows].map(r => r.map(x => `"${x ?? ''}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `event-${eventId}-ticket-holders.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [participants, eventId]);
 
   return (
     <Card>
@@ -98,7 +81,7 @@ const ParticipantList = ({ eventId }: ParticipantListProps) => {
                 <TableHead>Email</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Matches</TableHead>
+                <TableHead>Ticket Type</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -126,7 +109,7 @@ const ParticipantList = ({ eventId }: ParticipantListProps) => {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{participant.matchesReceived}</TableCell>
+                    <TableCell>{participant.ticketType}</TableCell>
                     <TableCell className="text-right">
                       {participant.status === "pending" && (
                         <Button 
