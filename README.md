@@ -201,6 +201,20 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 - Enforce per-user and per-type ticket limits in the app logic.
 - Set up RLS (Row Level Security) policies so users can only see/manage their own tickets.
 
+**Supabase Schema for Ticketing:**
+- `event_ticket_setting`: Per-event ticketing settings (enabled, max per user, waitlist, etc.)
+- `ticket_type`: Types of tickets for an event (name, price, quantity, sales window)
+- `event_ticket`: Individual ticket reservations (status, user, type, price paid, discount code, etc.)
+- `discount_code`: Discount codes for events/tickets (code, type, value, usage limits, validity, etc.)
+
+**Relationships:**
+- `event_ticket.event_id` → `event.id`
+- `event_ticket.ticket_type_id` → `ticket_type.id`
+- `event_ticket.discount_code_id` → `discount_code.id`
+- `ticket_type.event_id` → `event.id`
+- `event_ticket_setting.event_id` → `event.id`
+- `discount_code.event_id` → `event.id`
+
 #### **Phase 2.2 – Stripe Integration for Paid Tickets**
 - Integrate Stripe with Supabase for payment processing ([Supabase Stripe integration guide](https://medium.com/@ojasskapre/implementing-stripe-subscriptions-with-supabase-next-js-and-fastapi-666e1aada1b5#:~:text=,create%20a%20Stripe%20Checkout%20session)).
 - Add price fields to ticket types and support paid ticket types.
@@ -211,8 +225,8 @@ Event organizers gain access to an **Organizer Dashboard** with tools to manage 
 
 #### **Phase 2.3 – Ticket Discounting System**
 - Add discount code support to the ticketing system (see [Stripe Discounts documentation](https://docs.stripe.com/payments/checkout/discounts?payment-ui=embedded-components#:~:text=match%20at%20L308%20On%20your,parameter%20in%20a%20Checkout%20Session)).
-- Allow organizers to create and manage discount codes for their events.
-- Users can enter a discount code at checkout; validate and apply the code to reduce the ticket price.
+- Allow organizers to create and manage discount codes for their events (stored in the `discount_code` table).
+- Users can enter a discount code at checkout; validate and apply the code to reduce the ticket price (applied via `event_ticket.discount_code_id`).
 - Enforce discount code usage limits, expiration, and eligibility in both Supabase and Stripe.
 - Track which tickets were purchased with which discount codes for reporting.
 - Show applied discounts and final prices in the UI and receipts.

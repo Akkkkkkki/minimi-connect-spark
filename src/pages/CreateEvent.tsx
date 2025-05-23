@@ -20,6 +20,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { Switch } from "@/components/ui/switch";
+import { getEventTicketSetting, getTicketTypes, reserveFreeTicket } from '@/services/ticketing';
 
 const eventSchema = z.object({
   title: z.string().min(3, {
@@ -54,6 +56,12 @@ const CreateEvent = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const [ticketingEnabled, setTicketingEnabled] = useState(false);
+  const [maxTicketsPerUser, setMaxTicketsPerUser] = useState(1);
+  const [allowWaitlist, setAllowWaitlist] = useState(false);
+  const [ticketTypes, setTicketTypes] = useState([
+    { name: "General Admission", quantity: 30, price: 0 }
+  ]);
   
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -101,12 +109,33 @@ const CreateEvent = () => {
           end_time: endDateTime ? endDateTime.toISOString() : null,
           event_type: values.eventType,
           tags: tagsList,
-          max_participants: values.maxParticipants,
+          applicants_max_number: values.maxParticipants,
         })
         .select('id')
         .single();
         
       if (error) throw error;
+      const eventId = data.id;
+      
+      // Ticketing logic
+      if (ticketingEnabled) {
+        // Insert event_ticket_setting
+        await supabase.from('event_ticket_setting').insert({
+          event_id: eventId,
+          ticket_enabled: true,
+          max_tickets_per_user: maxTicketsPerUser,
+          allow_waitlist: allowWaitlist,
+        });
+        // Insert ticket types
+        for (const t of ticketTypes) {
+          await supabase.from('ticket_type').insert({
+            event_id: eventId,
+            name: t.name,
+            quantity: t.quantity,
+            price: t.price,
+          });
+        }
+      }
       
       toast.success("Event created successfully!");
       navigate("/event-management");
@@ -332,7 +361,100 @@ const CreateEvent = () => {
                   )}
                 />
                 
-                <div className="flex justify-end gap-4">
+                {/* Ticketing Section - moved inside the form and using plain UI components */}
+                <div className="mt-8 border-t pt-6">
+                  <div className="mb-4 flex items-center gap-4">
+                    <Switch checked={ticketingEnabled} onCheckedChange={setTicketingEnabled} id="enable-ticketing" />
+                    <label htmlFor="enable-ticketing" className="font-medium cursor-pointer select-none">Enable Ticketing for this Event</label>
+                  </div>
+                  {ticketingEnabled && (
+                    <div className="space-y-4">
+                      <div className="flex gap-4 flex-wrap">
+                        <div className="flex flex-col w-48">
+                          <label htmlFor="max-tickets-per-user" className="mb-1 font-medium">Max Tickets Per User</label>
+                          <input
+                            id="max-tickets-per-user"
+                            type="number"
+                            min={1}
+                            value={maxTicketsPerUser}
+                            onChange={e => setMaxTicketsPerUser(Number(e.target.value))}
+                            className="border rounded px-2 py-1"
+                          />
+                          <span className="text-xs text-muted-foreground mt-1">How many tickets each user can reserve (default: 1)</span>
+                        </div>
+                        <div className="flex flex-col w-48">
+                          <label htmlFor="allow-waitlist" className="mb-1 font-medium">Allow Waitlist</label>
+                          <div className="flex items-center gap-2">
+                            <Switch checked={allowWaitlist} onCheckedChange={setAllowWaitlist} id="allow-waitlist" />
+                            <span className="text-xs text-muted-foreground">Allow users to join a waitlist if tickets are full</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="font-medium">Ticket Types</label>
+                        {ticketTypes.map((t, idx) => (
+                          <div key={idx} className="flex gap-2 items-center mb-2 flex-wrap">
+                            <input
+                              placeholder="Ticket Name"
+                              value={t.name}
+                              onChange={e => {
+                                const arr = [...ticketTypes];
+                                arr[idx].name = e.target.value;
+                                setTicketTypes(arr);
+                              }}
+                              className="w-1/3 border rounded px-2 py-1"
+                            />
+                            <input
+                              type="number"
+                              min={1}
+                              placeholder="Quantity"
+                              value={t.quantity}
+                              onChange={e => {
+                                const arr = [...ticketTypes];
+                                arr[idx].quantity = Number(e.target.value);
+                                setTicketTypes(arr);
+                              }}
+                              className="w-1/4 border rounded px-2 py-1"
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="Price"
+                              value={t.price}
+                              onChange={e => {
+                                const arr = [...ticketTypes];
+                                arr[idx].price = Number(e.target.value);
+                                setTicketTypes(arr);
+                              }}
+                              className="w-1/4 border rounded px-2 py-1"
+                              disabled
+                            />
+                            {ticketTypes.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setTicketTypes(ticketTypes.filter((_, i) => i !== idx))}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTicketTypes([...ticketTypes, { name: '', quantity: 1, price: 0 }])}
+                        >
+                          Add Ticket Type
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* End Ticketing Section */}
+                <div className="flex justify-end gap-4 mt-8">
                   <Button 
                     type="button" 
                     variant="outline"

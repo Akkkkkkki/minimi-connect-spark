@@ -67,7 +67,6 @@ const QuestionnaireBuilder = () => {
         } else {
           setQuestionnaire(aqData);
           // Fetch questions for this questionnaire
-          // @ts-expect-error
           const { data: questionsData, error: questionsError } = await supabase
             .from('questionnaire_question')
             .select("*")
@@ -217,11 +216,28 @@ const QuestionnaireBuilder = () => {
     }
     setSaving(true);
     try {
+      let questionnaireId = questionnaire?.id;
+      // If questionnaire does not exist, create it first
+      if (!questionnaireId) {
+        const { data: newQ, error: newQError } = await supabase
+          .from('event_questionnaire')
+          .insert({ event_id: eventId })
+          .select()
+          .single();
+        if (newQError) throw newQError;
+        questionnaireId = newQ.id;
+        setQuestionnaire(newQ); // update state for future
+      }
+      if (!questionnaireId) {
+        toast.error("Failed to create questionnaire record");
+        setSaving(false);
+        return;
+      }
       // Upsert all questions
       const upsertQuestions = questions.map((q, idx) => {
         const dbQuestion: any = {
           id: q.id,
-          event_questionnaire_id: questionnaire.id,
+          event_questionnaire_id: questionnaireId,
           question_text: q.text,
           question_type: q.type,
           required: q.required,

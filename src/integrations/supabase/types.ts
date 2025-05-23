@@ -600,6 +600,100 @@ export type Database = {
         }
         Relationships: []
       }
+      event_ticket_setting: {
+        Row: {
+          id: string;
+          event_id: string;
+          ticket_enabled: boolean;
+          ticket_note: string | null;
+          allow_waitlist: boolean;
+          refund_policy: string | null;
+          allow_transfer: boolean;
+          max_tickets_per_user: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          ticket_enabled: boolean;
+          ticket_note?: string | null;
+          allow_waitlist: boolean;
+          refund_policy?: string | null;
+          allow_transfer?: boolean;
+          max_tickets_per_user?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          ticket_enabled?: boolean;
+          ticket_note?: string | null;
+          allow_waitlist?: boolean;
+          refund_policy?: string | null;
+          allow_transfer?: boolean;
+          max_tickets_per_user?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_ticket_setting_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "event";
+            referencedColumns: ["id"];
+          }
+        ];
+      },
+      ticket_type: {
+        Row: {
+          id: string;
+          event_id: string;
+          name: string;
+          description: string | null;
+          price: number;
+          quantity: number | null;
+          sales_start: string | null;
+          sales_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          name: string;
+          description?: string | null;
+          price?: number;
+          quantity?: number | null;
+          sales_start?: string | null;
+          sales_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          name?: string;
+          description?: string | null;
+          price?: number;
+          quantity?: number | null;
+          sales_start?: string | null;
+          sales_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ticket_type_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "event";
+            referencedColumns: ["id"];
+          }
+        ];
+      },
     }
     Views: {
       [_ in never]: never
