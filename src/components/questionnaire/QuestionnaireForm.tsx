@@ -64,8 +64,8 @@ const QuestionnaireForm: React.FC<QuestionnaireFormProps> = ({ eventId, isPartic
           // Fetch questions for this questionnaire
           const { data: questionsData, error: questionsError } = await supabase
             .from('questionnaire_question')
-            .select("*")
-            .eq("event_questionnaire_id", aqData.id)
+            .select("id,question_text,question_type,order,options,required,questionnaire_id")
+            .eq("questionnaire_id", aqData.id)
             .order("order", { ascending: true });
           if (questionsError) throw questionsError;
           setQuestions(

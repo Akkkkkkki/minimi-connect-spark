@@ -20,6 +20,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, GripVertical, MoveUp, MoveDown, Edit, Save } from "lucide-react";
 import { Question, Questionnaire } from "@/types/index";
 
+export interface QuestionnaireQuestion {
+  id: string;
+  question_text: string;
+  question_type: string;
+  order: number;
+  options: any | null;
+  required: boolean | null;
+  questionnaire_id: string | null;
+}
+
 const QuestionnaireBuilder = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -67,12 +77,13 @@ const QuestionnaireBuilder = () => {
         } else {
           setQuestionnaire(aqData);
           // Fetch questions for this questionnaire
-          const { data: questionsData, error: questionsError } = await supabase
+          const { data, error } = await supabase
             .from('questionnaire_question')
-            .select("*")
-            .eq("event_questionnaire_id", aqData.id)
+            .select("id,question_text,question_type,order,options,required,questionnaire_id")
+            .eq("questionnaire_id", aqData.id)
             .order("order", { ascending: true });
-          if (questionsError) throw questionsError;
+          const questionsData = data as QuestionnaireQuestion[];
+          if (error) throw error;
           setQuestions(
             (questionsData || []).map((q: any) => ({
               id: q.id,
@@ -237,7 +248,7 @@ const QuestionnaireBuilder = () => {
       const upsertQuestions = questions.map((q, idx) => {
         const dbQuestion: any = {
           id: q.id,
-          event_questionnaire_id: questionnaireId,
+          questionnaire_id: questionnaireId,
           question_text: q.text,
           question_type: q.type,
           required: q.required,
